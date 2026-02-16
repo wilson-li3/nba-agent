@@ -16,7 +16,7 @@ async def classify_question(question: str) -> str:
         max_tokens=10,
     )
     category = result.strip().upper()
-    if category not in ("STATS", "NEWS", "MIXED"):
+    if category not in ("STATS", "NEWS", "MIXED", "OFF_TOPIC"):
         category = "STATS"
     return category
 
@@ -24,6 +24,12 @@ async def classify_question(question: str) -> str:
 async def route_question(question: str) -> dict:
     """Classify the question and dispatch to the appropriate service(s)."""
     category = await classify_question(question)
+
+    if category == "OFF_TOPIC":
+        return {
+            "category": "off_topic",
+            "answer": "I'm an NBA assistant — my job is for NBA purposes only! Ask me about player stats, game scores, standings, trades, or league news.",
+        }
 
     if category == "STATS":
         result = await answer_stats_question(question)

@@ -9,7 +9,10 @@ CLASSIFY_PROMPT = """Classify the following NBA-related question into one of thr
 - MIXED: Questions that need both stats and recent news context.
   Examples: "How has the new trade impacted the team's win percentage?", "Compare the stats of players involved in the latest trade."
 
-Respond with exactly one word: STATS, NEWS, or MIXED.
+- OFF_TOPIC: Questions that are not related to the NBA at all.
+  Examples: "What is the capital of France?", "Write me a poem", "How do I cook pasta?", "What's the weather today?"
+
+Respond with exactly one word: STATS, NEWS, MIXED, or OFF_TOPIC.
 
 Question: {question}
 """
