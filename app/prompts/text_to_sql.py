@@ -42,7 +42,7 @@ You have access to a PostgreSQL database with NBA statistics. Here is the schema
 
 ### Important notes
 - season_id format: the year the season started, e.g. '2023-24' for the 2023-24 season
-- Use ILIKE for name matching (e.g. WHERE display_name ILIKE '%lebron%')
+- ALWAYS use unaccent() on BOTH the column and the search string when matching player names. Many names have accents (Jokić, Dončić, Vučević). Example: WHERE unaccent(display_name) ILIKE unaccent('%jokic%')
 - Use materialized views for career/season aggregate questions — they're faster
 - For "current season" questions, use season_id = '2024-25'
 - team abbreviations: LAL, BOS, GSW, MIA, etc.
@@ -59,9 +59,48 @@ Rules:
 2. Always use SELECT — never INSERT, UPDATE, DELETE, DROP, ALTER, or any DDL/DML.
 3. Use materialized views when they can answer the question (faster).
 4. LIMIT results to 25 rows unless the user asks for more.
-5. Use ILIKE for fuzzy name matching.
+5. Use ILIKE for fuzzy name matching. Always wrap player name columns AND the search string in unaccent() to handle accented characters (Jokić, Dončić, Vučević, etc.). Example: WHERE unaccent(display_name) ILIKE unaccent('%jokic%')
 6. Round decimal results to 1-2 decimal places for readability.
 7. If the question is ambiguous, make reasonable assumptions.
+8. For "last N games" or "recent games" queries, use a subquery to select the rows first, then aggregate:
+   SELECT ROUND(AVG(pts)::numeric, 1) FROM (SELECT pts FROM player_game_stats WHERE ... ORDER BY game_date DESC LIMIT N) sub;
+9. Never put ORDER BY/LIMIT in the outer query when it conflicts with aggregation.
+10. Player names (display_name) are only in the `players` table. When filtering by name on `player_game_stats`, join with `players` or use a subquery: WHERE player_id = (SELECT player_id FROM players WHERE ...)
+11. "Player props" is a sports betting term meaning stat thresholds (e.g. "over 20.5 points"). When users ask about "player props", "props that have hit", "streaks", or "consistency", they want to know which players have exceeded a stat threshold in every one of their last N games. Use the ROW_NUMBER() window function pattern shown below — do NOT just fetch recent box scores.
+
+Example — find active players who hit 20+ pts in each of their last 8 games:
+SELECT p.display_name, sub.games_hit, sub.avg_pts
+FROM (
+    SELECT player_id, COUNT(*) as games_hit, ROUND(AVG(pts)::numeric,1) as avg_pts
+    FROM (
+        SELECT player_id, pts,
+               ROW_NUMBER() OVER (PARTITION BY player_id ORDER BY game_date DESC) as rn
+        FROM player_game_stats
+        WHERE season_id = '2024-25'
+    ) recent
+    WHERE rn <= 8 AND pts >= 20
+    GROUP BY player_id
+    HAVING COUNT(*) = 8
+) sub
+JOIN players p USING (player_id)
+ORDER BY sub.avg_pts DESC;
+
+Example — check if a specific player hit over 25 pts in their last 10 games:
+SELECT p.display_name, COUNT(*) as games_hit, 10 as total_games, ROUND(AVG(recent.pts)::numeric,1) as avg_pts
+FROM (
+    SELECT player_id, pts,
+           ROW_NUMBER() OVER (PARTITION BY player_id ORDER BY game_date DESC) as rn
+    FROM player_game_stats
+    WHERE player_id = (SELECT player_id FROM players WHERE unaccent(display_name) ILIKE unaccent('%tatum%'))
+      AND season_id = '2024-25'
+) recent
+JOIN players p ON p.player_id = recent.player_id
+WHERE rn <= 10 AND pts > 25
+GROUP BY p.display_name;
+
+For broad "give me player props" questions with no specific stat, use UNION ALL to check several key props. Pick 3-4 of the most popular: pts >= 20, pts >= 25, reb >= 10, ast >= 8, fg3m >= 3. For each, use the ROW_NUMBER pattern above with HAVING COUNT(*) = N. Include a 'prop' label column. Example structure:
+SELECT display_name, '20+ PTS' as prop, games_hit, avg_val FROM (...) UNION ALL SELECT display_name, '25+ PTS' as prop, games_hit, avg_val FROM (...) ...
+ORDER BY prop, avg_val DESC LIMIT 25;
 
 User question: {question}
 """

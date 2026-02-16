@@ -34,25 +34,56 @@ async def answer_stats_question(question: str) -> dict:
             "results": None,
         }
 
-    # Step 3: Execute with read-only transaction and timeout
+    # Step 3: Execute with read-only transaction and timeout (retry once on error)
     pool = await get_pool()
-    try:
-        async with pool.acquire() as conn:
-            async with conn.transaction(readonly=True):
-                rows = await asyncio.wait_for(
-                    conn.fetch(sql),
-                    timeout=5.0,
+    last_error = None
+    for attempt in range(2):
+        try:
+            async with pool.acquire() as conn:
+                async with conn.transaction(readonly=True):
+                    rows = await asyncio.wait_for(
+                        conn.fetch(sql),
+                        timeout=15.0,
+                    )
+                    results = [dict(r) for r in rows]
+            last_error = None
+            break
+        except asyncio.TimeoutError:
+            return {
+                "answer": "The query took too long to execute. Try a more specific question.",
+                "sql": sql,
+                "results": None,
+            }
+        except Exception as e:
+            last_error = e
+            if attempt == 0:
+                # Ask the LLM to fix the SQL based on the error
+                retry_prompt = (
+                    f"The following SQL query failed with this error:\n\n"
+                    f"SQL:\n{sql}\n\n"
+                    f"Error:\n{e}\n\n"
+                    f"Original question: {question}\n\n"
+                    f"{SCHEMA_DESCRIPTION}\n\n"
+                    f"Please fix the SQL query. Output ONLY the corrected SQL, no explanation."
                 )
-                results = [dict(r) for r in rows]
-    except asyncio.TimeoutError:
+                sql = await chat_completion(
+                    messages=[{"role": "user", "content": retry_prompt}],
+                    model="gpt-4o",
+                    temperature=0.0,
+                )
+                sql = sql.strip().strip("`").strip()
+                if sql.startswith("sql"):
+                    sql = sql[3:].strip()
+                if _UNSAFE_PATTERN.search(sql):
+                    return {
+                        "answer": "I can only run read-only queries. Your question would require modifying the database.",
+                        "sql": sql,
+                        "results": None,
+                    }
+
+    if last_error is not None:
         return {
-            "answer": "The query took too long to execute. Try a more specific question.",
-            "sql": sql,
-            "results": None,
-        }
-    except Exception as e:
-        return {
-            "answer": f"Error executing query: {e}",
+            "answer": f"Error executing query: {last_error}",
             "sql": sql,
             "results": None,
         }
