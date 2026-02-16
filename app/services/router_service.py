@@ -41,10 +41,11 @@ async def route_question(question: str) -> dict:
         result["category"] = "news"
         return result
 
-    # MIXED — run both in parallel
-    stats_task = asyncio.create_task(answer_stats_question(question))
-    news_task = asyncio.create_task(answer_news_question(question))
-    stats_result, news_result = await asyncio.gather(stats_task, news_task)
+    # MIXED — run news first, then pass context to stats
+    news_result = await answer_news_question(question)
+    stats_result = await answer_stats_question(
+        question, news_context=news_result["answer"]
+    )
 
     combined_answer = (
         f"**Stats perspective:**\n{stats_result['answer']}\n\n"

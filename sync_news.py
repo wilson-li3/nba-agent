@@ -19,8 +19,7 @@ load_dotenv()
 
 RSS_FEEDS = [
     ("ESPN NBA", "https://www.espn.com/espn/rss/nba/news"),
-    ("NBA.com", "https://www.nba.com/feeds/promopage_articles/rss"),
-    ("Bleacher Report NBA", "https://bleacherreport.com/articles/feed?tag_id=19"),
+    ("RealGM NBA", "https://basketball.realgm.com/rss/wiretap/0/0.xml"),
 ]
 
 CHUNK_SIZE = 500       # tokens

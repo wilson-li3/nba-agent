@@ -40,6 +40,9 @@ You have access to a PostgreSQL database with NBA statistics. Here is the schema
 - games_20_plus_pts, games_30_plus_pts, games_40_plus_pts, games_50_plus_pts, games_60_plus_pts
 - triple_doubles, double_doubles_pts_reb, double_doubles_pts_ast
 
+**mv_team_back_to_backs** — flags games where a team played the previous day
+- team_id (BIGINT), game_id (TEXT), game_date (DATE), season_id (TEXT), is_b2b (BOOLEAN)
+
 ### Important notes
 - season_id format: the year the season started, e.g. '2023-24' for the 2023-24 season
 - ALWAYS use unaccent() on BOTH the column and the search string when matching player names. Many names have accents (Jokić, Dončić, Vučević). Example: WHERE unaccent(display_name) ILIKE unaccent('%jokic%')
@@ -101,6 +104,84 @@ GROUP BY p.display_name;
 For broad "give me player props" questions with no specific stat, use UNION ALL to check several key props. Pick 3-4 of the most popular: pts >= 20, pts >= 25, reb >= 10, ast >= 8, fg3m >= 3. For each, use the ROW_NUMBER pattern above with HAVING COUNT(*) = N. Include a 'prop' label column. Example structure:
 SELECT display_name, '20+ PTS' as prop, games_hit, avg_val FROM (...) UNION ALL SELECT display_name, '25+ PTS' as prop, games_hit, avg_val FROM (...) ...
 ORDER BY prop, avg_val DESC LIMIT 25;
+
+12. For home/away split questions: matchup LIKE '%vs.%' = home, matchup LIKE '%@%' = away.
+
+Example — Steph Curry home vs away this season:
+SELECT
+    CASE WHEN s.matchup LIKE '%vs.%' THEN 'Home' ELSE 'Away' END AS location,
+    COUNT(*) AS games,
+    ROUND(AVG(s.pts)::numeric,1) AS ppg, ROUND(AVG(s.reb)::numeric,1) AS rpg,
+    ROUND(AVG(s.ast)::numeric,1) AS apg, ROUND(AVG(s.fg_pct)::numeric,3) AS fg_pct
+FROM player_game_stats s
+WHERE s.player_id = (SELECT player_id FROM players WHERE unaccent(display_name) ILIKE unaccent('%curry%'))
+  AND s.season_id = '2024-25'
+GROUP BY CASE WHEN s.matchup LIKE '%vs.%' THEN 'Home' ELSE 'Away' END;
+
+13. For matchup / opponent-specific stats: use WHERE matchup LIKE '%OPP%' (e.g., '%BOS%').
+
+Example — LeBron's averages vs Boston:
+SELECT p.display_name, COUNT(*) AS games,
+       ROUND(AVG(s.pts)::numeric,1) AS ppg, ROUND(AVG(s.reb)::numeric,1) AS rpg,
+       ROUND(AVG(s.ast)::numeric,1) AS apg
+FROM player_game_stats s
+JOIN players p USING (player_id)
+WHERE unaccent(p.display_name) ILIKE unaccent('%lebron%')
+  AND s.matchup LIKE '%BOS%'
+GROUP BY p.display_name;
+
+14. For trending / hot-cold / momentum questions, compare last 5 vs last 15 vs season using FILTER:
+
+WITH recent AS (
+    SELECT pts, reb, ast,
+           ROW_NUMBER() OVER (ORDER BY game_date DESC) AS rn
+    FROM player_game_stats
+    WHERE player_id = (SELECT player_id FROM players WHERE unaccent(display_name) ILIKE unaccent('%tatum%'))
+      AND season_id = '2024-25'
+)
+SELECT
+    ROUND(AVG(pts) FILTER (WHERE rn <= 5)::numeric, 1)  AS last_5_ppg,
+    ROUND(AVG(pts) FILTER (WHERE rn <= 15)::numeric, 1) AS last_15_ppg,
+    ROUND(AVG(pts)::numeric, 1)                          AS season_ppg,
+    ROUND(AVG(reb) FILTER (WHERE rn <= 5)::numeric, 1)  AS last_5_rpg,
+    ROUND(AVG(reb) FILTER (WHERE rn <= 15)::numeric, 1) AS last_15_rpg,
+    ROUND(AVG(reb)::numeric, 1)                          AS season_rpg,
+    ROUND(AVG(ast) FILTER (WHERE rn <= 5)::numeric, 1)  AS last_5_apg,
+    ROUND(AVG(ast) FILTER (WHERE rn <= 15)::numeric, 1) AS last_15_apg,
+    ROUND(AVG(ast)::numeric, 1)                          AS season_apg
+FROM recent;
+
+15. For back-to-back questions, JOIN player_game_stats with mv_team_back_to_backs ON (team_id, game_id).
+
+Example — Giannis on back-to-backs vs rest:
+SELECT
+    CASE WHEN b.is_b2b THEN 'Back-to-Back' ELSE 'Rest' END AS game_type,
+    COUNT(*) AS games,
+    ROUND(AVG(s.pts)::numeric,1) AS ppg, ROUND(AVG(s.reb)::numeric,1) AS rpg
+FROM player_game_stats s
+JOIN mv_team_back_to_backs b ON b.team_id = s.team_id AND b.game_id = s.game_id
+WHERE s.player_id = (SELECT player_id FROM players WHERE unaccent(display_name) ILIKE unaccent('%giannis%'))
+  AND s.season_id = '2024-25'
+GROUP BY CASE WHEN b.is_b2b THEN 'Back-to-Back' ELSE 'Rest' END;
+
+16. For injury-impact questions, news context will be appended below. Use it to identify which player is injured.
+Then compare teammates' stats in games where the injured player did NOT appear vs games where they did:
+
+SELECT p.display_name,
+       COUNT(*) FILTER (WHERE pgs2.player_id IS NULL) AS games_without,
+       ROUND(AVG(s.pts) FILTER (WHERE pgs2.player_id IS NULL)::numeric,1) AS ppg_without,
+       ROUND(AVG(s.pts) FILTER (WHERE pgs2.player_id IS NOT NULL)::numeric,1) AS ppg_with
+FROM player_game_stats s
+JOIN players p USING (player_id)
+LEFT JOIN player_game_stats pgs2
+    ON pgs2.game_id = s.game_id AND pgs2.player_id = (SELECT player_id FROM players WHERE ...)
+WHERE s.team_id = (SELECT team_id FROM players WHERE ...)
+  AND s.player_id != (SELECT player_id FROM players WHERE ...)
+  AND s.season_id = '2024-25'
+GROUP BY p.display_name
+HAVING COUNT(*) FILTER (WHERE pgs2.player_id IS NULL) >= 3
+ORDER BY (AVG(s.pts) FILTER (WHERE pgs2.player_id IS NULL) - AVG(s.pts) FILTER (WHERE pgs2.player_id IS NOT NULL)) DESC
+LIMIT 10;
 
 User question: {question}
 """

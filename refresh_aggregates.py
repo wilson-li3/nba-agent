@@ -94,16 +94,30 @@ JOIN players p USING (player_id)
 GROUP BY p.player_id, p.display_name;
 """
 
+MV_TEAM_BACK_TO_BACKS = """
+CREATE MATERIALIZED VIEW IF NOT EXISTS mv_team_back_to_backs AS
+WITH team_games AS (
+    SELECT DISTINCT team_id, game_id, game_date, season_id
+    FROM player_game_stats
+)
+SELECT
+    team_id, game_id, game_date, season_id,
+    (game_date - LAG(game_date) OVER (PARTITION BY team_id ORDER BY game_date) = 1) AS is_b2b
+FROM team_games;
+"""
+
 UNIQUE_INDEXES = [
     "CREATE UNIQUE INDEX IF NOT EXISTS mv_pct_pk ON mv_player_career_totals (player_id);",
     "CREATE UNIQUE INDEX IF NOT EXISTS mv_psa_pk ON mv_player_season_averages (player_id, season_id);",
     "CREATE UNIQUE INDEX IF NOT EXISTS mv_pmg_pk ON mv_player_milestone_games (player_id);",
+    "CREATE UNIQUE INDEX IF NOT EXISTS mv_tb2b_pk ON mv_team_back_to_backs (team_id, game_id);",
 ]
 
 VIEWS = [
     "mv_player_career_totals",
     "mv_player_season_averages",
     "mv_player_milestone_games",
+    "mv_team_back_to_backs",
 ]
 
 
@@ -124,6 +138,7 @@ def main() -> None:
         cur.execute(MV_CAREER_TOTALS)
         cur.execute(MV_SEASON_AVERAGES)
         cur.execute(MV_MILESTONE_GAMES)
+        cur.execute(MV_TEAM_BACK_TO_BACKS)
 
         # Create unique indexes for CONCURRENTLY refresh
         for idx_sql in UNIQUE_INDEXES:

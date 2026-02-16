@@ -13,10 +13,12 @@ _UNSAFE_PATTERN = re.compile(
 )
 
 
-async def answer_stats_question(question: str) -> dict:
+async def answer_stats_question(question: str, news_context: str | None = None) -> dict:
     """Full text-to-SQL pipeline: generate SQL, execute safely, format response."""
     # Step 1: Generate SQL
     prompt = TEXT_TO_SQL_PROMPT.format(schema=SCHEMA_DESCRIPTION, question=question)
+    if news_context:
+        prompt += f"\n\nRelevant injury/news context:\n{news_context}"
     sql = await chat_completion(
         messages=[{"role": "user", "content": prompt}],
         model="gpt-4o",
