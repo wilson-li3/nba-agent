@@ -21,7 +21,9 @@ async def answer_news_question(question: str) -> dict:
                 nc.embedding <=> $1::vector AS distance
             FROM news_chunks nc
             JOIN news_articles na ON nc.article_id = na.article_id
-            ORDER BY nc.embedding <=> $1::vector
+            ORDER BY
+              (nc.embedding <=> $1::vector) *
+              (1.0 + GREATEST(0, EXTRACT(EPOCH FROM (NOW() - COALESCE(na.published_at, na.ingested_at)))) / 86400.0 * 0.02)
             LIMIT 5
         """, embedding_str)
 

@@ -6,6 +6,7 @@
 <title>Ball Don't Lie — NBA Intelligence</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/marked@11/marked.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
@@ -341,6 +342,115 @@ html,body{
 .input-area{padding-bottom:36px;}
 .landing .input-area{padding-bottom:0;}
 
+/* ─── HEADLINES LINKS ─── */
+.headlines-items a{
+  color:var(--text-mid);
+  text-decoration:none;
+  transition:color 0.2s;
+}
+.headlines-items a:hover{
+  color:var(--orange);
+  text-decoration:underline;
+}
+
+/* ─── GAME CHIPS ─── */
+.game-chip{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  padding:4px 10px;
+  border:1px solid var(--border);
+  border-radius:14px;
+  font-size:0.78rem;
+  font-weight:500;
+  white-space:nowrap;
+  background:white;
+}
+.live-dot{
+  width:6px;height:6px;
+  border-radius:50%;
+  background:#22c55e;
+  animation:livePulse 1.5s ease-in-out infinite;
+}
+@keyframes livePulse{
+  0%,100%{opacity:1}
+  50%{opacity:0.3}
+}
+
+/* ─── MARKDOWN IN ASSISTANT MESSAGES ─── */
+.message.assistant h1,.message.assistant h2,.message.assistant h3,
+.message.assistant h4,.message.assistant h5,.message.assistant h6{
+  margin:12px 0 6px;
+  font-weight:700;
+  line-height:1.3;
+}
+.message.assistant h1{font-size:1.15rem;}
+.message.assistant h2{font-size:1.05rem;}
+.message.assistant h3{font-size:0.95rem;}
+
+.message.assistant p{margin:6px 0;}
+
+.message.assistant ul,.message.assistant ol{
+  margin:6px 0;
+  padding-left:20px;
+}
+.message.assistant li{margin:3px 0;}
+
+.message.assistant table{
+  width:100%;
+  border-collapse:collapse;
+  margin:10px 0;
+  font-size:0.82rem;
+}
+.message.assistant thead tr{
+  background:var(--orange);
+  color:white;
+}
+.message.assistant th,.message.assistant td{
+  padding:6px 10px;
+  border:1px solid var(--border);
+  text-align:left;
+}
+.message.assistant tbody tr:nth-child(even){
+  background:var(--cream);
+}
+
+.message.assistant pre{
+  margin:8px 0;
+  padding:10px 14px;
+  background:var(--cream);
+  border-radius:10px;
+  font-family:'SF Mono','Fira Code','Cascadia Code',monospace;
+  font-size:0.76rem;
+  color:var(--text-mid);
+  overflow-x:auto;
+  border:1px solid var(--border);
+}
+.message.assistant code{
+  font-family:'SF Mono','Fira Code','Cascadia Code',monospace;
+  font-size:0.82em;
+  background:var(--cream);
+  padding:1px 4px;
+  border-radius:4px;
+}
+.message.assistant pre code{
+  background:none;
+  padding:0;
+}
+
+.message.assistant hr{
+  border:none;
+  border-top:1px solid var(--border);
+  margin:12px 0;
+}
+
+.message.assistant blockquote{
+  border-left:3px solid var(--orange-light);
+  padding-left:12px;
+  margin:8px 0;
+  color:var(--text-mid);
+}
+
 @media(max-width:640px){
   .app{max-width:100%;}
   .message{max-width:90%;}
@@ -356,13 +466,12 @@ html,body{
   <!-- Headlines -->
   <div class="headlines-bar">
     <span class="headlines-label">Headlines</span>
-    <span class="headlines-items">No headlines yet — connect a news source to see live updates.</span>
+    <span class="headlines-items" id="headlinesItems">No headlines yet — connect a news source to see live updates.</span>
   </div>
 
   <!-- Scores ticker -->
   <div class="scores-bar">
-    <span class="placeholder">Live scores coming soon</span>
-    <span class="view-all">View all &gt;</span>
+    <span id="scoresContent">Live scores coming soon</span>
   </div>
 
   <!-- LANDING PAGE (centered branding + input) -->
@@ -457,6 +566,8 @@ html,body{
 </div>
 
 <script>
+marked.use({ breaks: true, gfm: true });
+
 const form = document.getElementById('chatForm');
 const input = document.getElementById('questionInput');
 const sendBtn = document.getElementById('sendBtn');
@@ -464,8 +575,52 @@ const messagesEl = document.getElementById('messages');
 const landingEl = document.getElementById('landing');
 const chatViewEl = document.getElementById('chatView');
 const chatInputArea = document.getElementById('chatInputArea');
+const headlinesItems = document.getElementById('headlinesItems');
+const scoresContent = document.getElementById('scoresContent');
 let chatActive = false;
 let conversationHistory = [];
+
+// ─── Headlines ───
+async function fetchHeadlines() {
+  try {
+    const res = await fetch('/headlines');
+    const data = await res.json();
+    if (data.headlines && data.headlines.length > 0) {
+      headlinesItems.innerHTML = data.headlines.map(h =>
+        h.url
+          ? `<a href="${escapeHtml(h.url)}" target="_blank">${escapeHtml(h.title)}</a>`
+          : escapeHtml(h.title)
+      ).join(' &middot; ');
+    }
+  } catch (e) { /* keep placeholder */ }
+}
+
+// ─── Scores ───
+async function fetchScores() {
+  try {
+    const res = await fetch('/scores');
+    const data = await res.json();
+    if (data.games && data.games.length > 0) {
+      const label = data.label ? `<strong>${escapeHtml(data.label)}</strong> ` : '';
+      const chips = data.games.map(g => {
+        const hasScore = g.home_pts != null && g.away_pts != null;
+        const statusText = g.game_status_text || '';
+        const isLive = statusText.match(/^\d/) && !statusText.match(/final/i);
+        const liveDot = isLive ? '<span class="live-dot"></span>' : '';
+        if (hasScore) {
+          return `<span class="game-chip">${liveDot}${escapeHtml(g.away_team_abbr)} ${g.away_pts} - ${g.home_pts} ${escapeHtml(g.home_team_abbr)} <small>${escapeHtml(statusText)}</small></span>`;
+        } else {
+          return `<span class="game-chip">${escapeHtml(g.away_team_abbr)} @ ${escapeHtml(g.home_team_abbr)} <small>${escapeHtml(statusText)}</small></span>`;
+        }
+      }).join(' ');
+      scoresContent.innerHTML = label + chips;
+    }
+  } catch (e) { /* keep placeholder */ }
+}
+
+fetchHeadlines();
+fetchScores();
+setInterval(fetchScores, 60000);
 
 function switchToChat() {
   if (chatActive) return;
@@ -551,7 +706,7 @@ function addAssistantMessage(data) {
   if (data.category) {
     const labels = {
       stats:'Stats', news:'News', mixed:'Mixed',
-      betting:'Betting', off_topic:'Off Topic'
+      betting:'Betting', off_topic:'Off Topic', error:'Error'
     };
     html += `<div class="category-badge">${labels[data.category] || data.category}</div>`;
   }
@@ -581,10 +736,7 @@ function addAssistantMessage(data) {
 }
 
 function formatAnswer(text) {
-  let s = escapeHtml(text);
-  s = s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-  s = s.replace(/\n/g, '<br>');
-  return s;
+  return marked.parse(text);
 }
 
 function escapeHtml(str) {

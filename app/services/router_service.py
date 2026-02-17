@@ -1,6 +1,9 @@
 import asyncio
+import logging
 
 from app.prompts.classify import CLASSIFY_PROMPT
+
+logger = logging.getLogger(__name__)
 from app.prompts.normalize import NORMALIZE_PROMPT
 from app.prompts.resolve_context import RESOLVE_CONTEXT_PROMPT
 from app.services.betting_service import answer_betting_question

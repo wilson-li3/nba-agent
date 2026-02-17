@@ -1,11 +1,14 @@
 import asyncio
 import json
+import logging
 import re
 
 from app.db import get_pool
 from app.prompts.format_betting import FORMAT_BETTING_PROMPT
 from app.prompts.parse_betting import PARSE_BETTING_PROMPT
 from app.services.llm import chat_completion
+
+logger = logging.getLogger(__name__)
 
 # Safety check — same pattern as stats_service
 _UNSAFE_PATTERN = re.compile(
@@ -43,40 +46,44 @@ async def _parse_betting_intent(question: str) -> dict:
         }
 
 
-async def _execute_query(pool, sql: str) -> list[dict]:
+async def _execute_query(pool, sql: str, params: list | None = None) -> list[dict]:
     """Execute a read-only query with timeout, return list of dicts."""
     if _UNSAFE_PATTERN.search(sql):
         return []
     try:
         async with pool.acquire() as conn:
             async with conn.transaction(readonly=True):
-                rows = await asyncio.wait_for(conn.fetch(sql), timeout=15.0)
+                rows = await asyncio.wait_for(
+                    conn.fetch(sql, *(params or [])), timeout=15.0
+                )
                 return [dict(r) for r in rows]
     except Exception:
+        logger.error("Betting query failed: %s", sql, exc_info=True)
         return []
 
 
-def _build_hit_rate_query(player_name: str) -> str:
+def _build_hit_rate_query(player_name: str) -> tuple[str, list]:
     """Query mv_player_prop_hit_rates for a specific player."""
-    return f"""
+    sql = """
 SELECT *
 FROM mv_player_prop_hit_rates
 WHERE player_id = (
     SELECT player_id FROM players
-    WHERE unaccent(display_name) ILIKE unaccent('%{player_name}%')
+    WHERE unaccent(display_name) ILIKE unaccent('%' || $1 || '%')
     LIMIT 1
 );
 """
+    return sql, [player_name]
 
 
-def _build_trend_query(player_name: str) -> str:
+def _build_trend_query(player_name: str) -> tuple[str, list]:
     """Compare last 5 vs last 15 vs season averages."""
-    return f"""
+    sql = """
 WITH recent AS (
     SELECT pts, reb, ast, fg3m, pts + reb + ast AS pra,
            ROW_NUMBER() OVER (ORDER BY game_date DESC) AS rn
     FROM player_game_stats
-    WHERE player_id = (SELECT player_id FROM players WHERE unaccent(display_name) ILIKE unaccent('%{player_name}%') LIMIT 1)
+    WHERE player_id = (SELECT player_id FROM players WHERE unaccent(display_name) ILIKE unaccent('%' || $1 || '%') LIMIT 1)
       AND season_id = '2024-25'
 )
 SELECT
@@ -97,24 +104,26 @@ SELECT
     ROUND(AVG(pra)::numeric, 1)                          AS season_pra
 FROM recent;
 """
+    return sql, [player_name]
 
 
-def _build_splits_query(player_name: str) -> str:
+def _build_splits_query(player_name: str) -> tuple[str, list]:
     """Query mv_player_home_away_splits for a specific player."""
-    return f"""
+    sql = """
 SELECT *
 FROM mv_player_home_away_splits
 WHERE player_id = (
     SELECT player_id FROM players
-    WHERE unaccent(display_name) ILIKE unaccent('%{player_name}%')
+    WHERE unaccent(display_name) ILIKE unaccent('%' || $1 || '%')
     LIMIT 1
 );
 """
+    return sql, [player_name]
 
 
-def _build_matchup_query(player_name: str, opponent_abbr: str) -> str:
+def _build_matchup_query(player_name: str, opponent_abbr: str) -> tuple[str, list]:
     """Player's stats vs a specific opponent this season."""
-    return f"""
+    sql = """
 SELECT p.display_name, COUNT(*) AS games,
        ROUND(AVG(s.pts)::numeric, 1) AS ppg,
        ROUND(AVG(s.reb)::numeric, 1) AS rpg,
@@ -122,25 +131,27 @@ SELECT p.display_name, COUNT(*) AS games,
        ROUND(AVG(s.fg3m)::numeric, 1) AS fg3mpg
 FROM player_game_stats s
 JOIN players p USING (player_id)
-WHERE unaccent(p.display_name) ILIKE unaccent('%{player_name}%')
-  AND s.matchup LIKE '%{opponent_abbr}%'
+WHERE unaccent(p.display_name) ILIKE unaccent('%' || $1 || '%')
+  AND s.matchup LIKE '%' || $2 || '%'
   AND s.season_id = '2024-25'
 GROUP BY p.display_name;
 """
+    return sql, [player_name, opponent_abbr]
 
 
-def _build_opp_defense_query(opponent_abbr: str) -> str:
+def _build_opp_defense_query(opponent_abbr: str) -> tuple[str, list]:
     """Query mv_team_defensive_ratings for a specific opponent."""
-    return f"""
+    sql = """
 SELECT *
 FROM mv_team_defensive_ratings
-WHERE team_abbr = '{opponent_abbr}';
+WHERE team_abbr = $1;
 """
+    return sql, [opponent_abbr]
 
 
-def _build_find_picks_query() -> str:
+def _build_find_picks_query() -> tuple[str, list]:
     """Find players with high prop hit rates (>=80% over last 10)."""
-    return """
+    sql = """
 SELECT display_name,
        pts_25_hit_last10, pts_20_hit_last10, pts_15_hit_last10,
        reb_8_hit_last10, reb_6_hit_last10,
@@ -169,6 +180,7 @@ ORDER BY
     ) DESC
 LIMIT 15;
 """
+    return sql, []
 
 
 # --- Team abbreviation mapping for opponent resolution ---
@@ -284,10 +296,10 @@ async def answer_betting_question(
             queries["matchup"] = _build_matchup_query(player_name, opponent_abbr)
             queries["opp_defense"] = _build_opp_defense_query(opponent_abbr)
 
-        # Execute all in parallel
+        # Execute all in parallel — each value is (sql, params)
         keys = list(queries.keys())
         results = await asyncio.gather(
-            *[_execute_query(pool, queries[k]) for k in keys]
+            *[_execute_query(pool, *queries[k]) for k in keys]
         )
         for k, r in zip(keys, results):
             collected_data[k] = r
@@ -297,7 +309,8 @@ async def answer_betting_question(
             collected_data["requested_prop"] = props[0]
 
     elif intent_type == "FIND_PICKS":
-        results = await _execute_query(pool, _build_find_picks_query())
+        sql, params = _build_find_picks_query()
+        results = await _execute_query(pool, sql, params)
         collected_data["high_hit_rate_props"] = results
 
     elif intent_type == "PARLAY" and props:
@@ -316,7 +329,7 @@ async def answer_betting_question(
 
         keys = list(all_queries.keys())
         results = await asyncio.gather(
-            *[_execute_query(pool, all_queries[k]) for k in keys]
+            *[_execute_query(pool, *all_queries[k]) for k in keys]
         )
         for k, r in zip(keys, results):
             collected_data[k] = r
@@ -339,13 +352,14 @@ async def answer_betting_question(
         if queries:
             keys = list(queries.keys())
             results = await asyncio.gather(
-                *[_execute_query(pool, queries[k]) for k in keys]
+                *[_execute_query(pool, *queries[k]) for k in keys]
             )
             for k, r in zip(keys, results):
                 collected_data[k] = r
     else:
         # Fallback: treat as FIND_PICKS
-        results = await _execute_query(pool, _build_find_picks_query())
+        sql, params = _build_find_picks_query()
+        results = await _execute_query(pool, sql, params)
         collected_data["high_hit_rate_props"] = results
 
     # Add news context if available

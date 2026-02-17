@@ -113,17 +113,27 @@ JOIN players p USING (player_id)
 ORDER BY sub.avg_pts DESC;
 
 Example — check if a specific player hit over 25 pts in their last 10 games:
-SELECT p.display_name, COUNT(*) as games_hit, 10 as total_games, ROUND(AVG(recent.pts)::numeric,1) as avg_pts
+SELECT p.display_name,
+       COUNT(*) AS total_games,
+       COUNT(*) FILTER (WHERE recent.pts > 25) AS games_hit,
+       ROUND(AVG(recent.pts)::numeric, 1) AS avg_pts,
+       MIN(recent.pts) AS min_pts,
+       MAX(recent.pts) AS max_pts
 FROM (
     SELECT player_id, pts,
-           ROW_NUMBER() OVER (PARTITION BY player_id ORDER BY game_date DESC) as rn
+           ROW_NUMBER() OVER (ORDER BY game_date DESC) AS rn
     FROM player_game_stats
     WHERE player_id = (SELECT player_id FROM players WHERE unaccent(display_name) ILIKE unaccent('%tatum%'))
       AND season_id = '2024-25'
 ) recent
 JOIN players p ON p.player_id = recent.player_id
-WHERE rn <= 10 AND pts > 25
+WHERE rn <= 10
 GROUP BY p.display_name;
+
+IMPORTANT: For "has X gone above Y" or "how many times did X hit Y" questions, ALWAYS use
+COUNT(*) FILTER (WHERE stat > threshold) so the query returns a row even if the player
+never hit the threshold. NEVER put the threshold check in the WHERE clause of the outer
+query — that causes 0 rows when the threshold is never met, which triggers a fallback.
 
 For broad "give me player props" questions with no specific stat, use UNION ALL to check several key props. Pick 3-4 of the most popular: pts >= 20, pts >= 25, reb >= 10, ast >= 8, fg3m >= 3. For each, use the ROW_NUMBER pattern above with HAVING COUNT(*) = N. Include a 'prop' label column. Example structure:
 SELECT display_name, '20+ PTS' as prop, games_hit, avg_val FROM (...) UNION ALL SELECT display_name, '25+ PTS' as prop, games_hit, avg_val FROM (...) ...

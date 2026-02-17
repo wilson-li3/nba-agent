@@ -9,7 +9,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.db import close_pool, create_pool
-from app.routers import ask, health
+from app.routers import ask, health, headlines, scores
 
 FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
 
@@ -35,6 +35,8 @@ app = FastAPI(title="NBA Intelligence Assistant", lifespan=lifespan)
 
 app.include_router(health.router)
 app.include_router(ask.router)
+app.include_router(headlines.router)
+app.include_router(scores.router)
 
 
 @app.get("/")
