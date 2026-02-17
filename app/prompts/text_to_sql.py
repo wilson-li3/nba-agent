@@ -15,6 +15,10 @@ You have access to a PostgreSQL database with NBA statistics. Here is the schema
 **players** — all NBA players (historical + active)
 - player_id (BIGINT, PK), first_name (TEXT), last_name (TEXT), display_name (TEXT)
 - is_active (BOOLEAN), from_year (INT), to_year (INT), team_id (BIGINT, FK → teams)
+- birthdate (DATE), height (TEXT, e.g. "6-11"), weight (TEXT, e.g. "280")
+- position (TEXT, e.g. "Center"), jersey (TEXT)
+- draft_year (INT), draft_round (INT), draft_number (INT)
+- country (TEXT), school (TEXT)
 
 **player_game_stats** — individual box scores per game
 - player_id (BIGINT, PK part), game_id (TEXT, PK part), season_id (TEXT), game_date (DATE)
@@ -248,6 +252,13 @@ SELECT display_name, season_id, ppg, rpg, apg, fg_pct, games_played
 FROM mv_player_season_averages
 WHERE player_id = (SELECT player_id FROM players WHERE unaccent(display_name) ILIKE unaccent('%name%'))
 ORDER BY season_id DESC;
+
+23. For biographical questions (age, height, weight, position, college, draft, country):
+- "How old is X?" → SELECT display_name, birthdate, AGE(birthdate) AS age FROM players WHERE unaccent(display_name) ILIKE unaccent('%name%');
+- "How tall is X?" → SELECT display_name, height, weight, position FROM players WHERE unaccent(display_name) ILIKE unaccent('%name%');
+- "Where did X go to college?" → SELECT display_name, school, country FROM players WHERE unaccent(display_name) ILIKE unaccent('%name%');
+- "What number does X wear?" → SELECT display_name, jersey, position, team_id FROM players WHERE unaccent(display_name) ILIKE unaccent('%name%');
+- "When was X drafted?" → SELECT display_name, draft_year, draft_round, draft_number FROM players WHERE unaccent(display_name) ILIKE unaccent('%name%');
 
 User question: {question}
 """

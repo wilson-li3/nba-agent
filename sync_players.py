@@ -1,16 +1,18 @@
 """
 Populate the teams and players tables from the NBA API.
-Run: python sync_players.py
+Run: python sync_players.py          # teams + players only
+     python sync_players.py --bios   # also sync biographical data for active players
 Requires: DATABASE_URL in environment or .env
 """
 
+import argparse
 import os
 import time
 
 import psycopg2
 from dotenv import load_dotenv
 from nba_api.stats.static import teams as static_teams
-from nba_api.stats.endpoints import commonallplayers
+from nba_api.stats.endpoints import commonallplayers, commonplayerinfo
 
 load_dotenv()
 
@@ -45,6 +47,21 @@ def ensure_schema(conn) -> None:
             CREATE INDEX IF NOT EXISTS idx_players_name
             ON players (LOWER(display_name));
         """)
+        # Bio columns — safe to re-run (ADD COLUMN IF NOT EXISTS)
+        bio_columns = [
+            ("birthdate", "DATE"),
+            ("height", "TEXT"),
+            ("weight", "TEXT"),
+            ("position", "TEXT"),
+            ("jersey", "TEXT"),
+            ("draft_year", "INT"),
+            ("draft_round", "INT"),
+            ("draft_number", "INT"),
+            ("country", "TEXT"),
+            ("school", "TEXT"),
+        ]
+        for col_name, col_type in bio_columns:
+            cur.execute(f"ALTER TABLE players ADD COLUMN IF NOT EXISTS {col_name} {col_type};")
         conn.commit()
 
 
@@ -134,7 +151,88 @@ def sync_players(conn) -> int:
     return count
 
 
+def sync_player_bios(conn) -> int:
+    """Fetch biographical info for active players via CommonPlayerInfo endpoint."""
+    with conn.cursor() as cur:
+        cur.execute("SELECT player_id FROM players WHERE is_active = TRUE")
+        active_ids = [row[0] for row in cur.fetchall()]
+
+    if not active_ids:
+        print("No active players found — skipping bios.")
+        return 0
+
+    count = 0
+    total = len(active_ids)
+    for i, pid in enumerate(active_ids):
+        try:
+            time.sleep(REQUEST_DELAY_SEC)
+            info = commonplayerinfo.CommonPlayerInfo(player_id=pid)
+            df = info.get_data_frames()[0]
+            if df is None or df.empty:
+                continue
+            row = df.iloc[0]
+
+            birthdate = row.get("BIRTHDATE")
+            if birthdate and str(birthdate).strip():
+                # The API returns ISO format; keep just the date part
+                birthdate = str(birthdate).strip()[:10]
+            else:
+                birthdate = None
+
+            def _safe_int(val):
+                try:
+                    v = int(val)
+                    return v if v != 0 else None
+                except (ValueError, TypeError):
+                    return None
+
+            def _safe_str(val):
+                s = str(val).strip() if val else None
+                return s if s and s.lower() != "nan" else None
+
+            with conn.cursor() as cur:
+                cur.execute("""
+                    UPDATE players SET
+                        birthdate   = %s,
+                        height      = %s,
+                        weight      = %s,
+                        position    = %s,
+                        jersey      = %s,
+                        draft_year  = %s,
+                        draft_round = %s,
+                        draft_number = %s,
+                        country     = %s,
+                        school      = %s
+                    WHERE player_id = %s
+                """, (
+                    birthdate,
+                    _safe_str(row.get("HEIGHT")),
+                    _safe_str(row.get("WEIGHT")),
+                    _safe_str(row.get("POSITION")),
+                    _safe_str(row.get("JERSEY")),
+                    _safe_int(row.get("DRAFT_YEAR")),
+                    _safe_int(row.get("DRAFT_ROUND")),
+                    _safe_int(row.get("DRAFT_NUMBER")),
+                    _safe_str(row.get("COUNTRY")),
+                    _safe_str(row.get("SCHOOL")),
+                    pid,
+                ))
+                conn.commit()
+            count += 1
+            if (i + 1) % 50 == 0:
+                print(f"  {i + 1}/{total} bios synced ...", flush=True)
+        except Exception as e:
+            print(f"  Warning: failed to fetch bio for player_id={pid}: {e}")
+            continue
+
+    return count
+
+
 def main() -> None:
+    parser = argparse.ArgumentParser(description="Sync NBA teams, players, and bios.")
+    parser.add_argument("--bios", action="store_true", help="Also sync biographical data for active players")
+    args = parser.parse_args()
+
     database_url = os.getenv("DATABASE_URL")
     if not database_url:
         raise SystemExit(
@@ -152,6 +250,11 @@ def main() -> None:
     print("Syncing players ...", end=" ", flush=True)
     n_players = sync_players(conn)
     print(f"{n_players} players.")
+
+    if args.bios:
+        print("Syncing player bios (active players only) ...", flush=True)
+        n_bios = sync_player_bios(conn)
+        print(f"{n_bios} bios synced.")
 
     conn.close()
     print("Done.")

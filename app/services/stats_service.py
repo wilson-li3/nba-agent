@@ -84,6 +84,13 @@ async def answer_stats_question(question: str, news_context: str | None = None) 
                     }
 
     if last_error is not None:
+        if _is_player_question(question, sql):
+            fallback_answer = await _llm_fallback(question)
+            return {
+                "answer": fallback_answer,
+                "sql": sql,
+                "results": None,
+            }
         return {
             "answer": f"Error executing query: {last_error}",
             "sql": sql,
@@ -101,8 +108,41 @@ async def answer_stats_question(question: str, news_context: str | None = None) 
         temperature=0.2,
     )
 
+    # Step 5: LLM fallback if results are empty and question is player-related
+    if not results and _is_player_question(question, sql):
+        answer = await _llm_fallback(question)
+
     return {
         "answer": answer,
         "sql": sql,
         "results": results[:25] if results else [],
     }
+
+
+def _is_player_question(question: str, sql: str) -> bool:
+    """Heuristic: was this question about a specific player?"""
+    q = question.lower()
+    # Check if the SQL referenced the players table
+    if "players" in sql.lower():
+        return True
+    # Common biographical keywords
+    bio_keywords = ["how old", "how tall", "height", "weight", "position",
+                    "college", "school", "drafted", "draft", "birthday",
+                    "born", "jersey", "number", "country", "where is", "from"]
+    return any(kw in q for kw in bio_keywords)
+
+
+async def _llm_fallback(question: str) -> str:
+    """Answer a player question from LLM general knowledge when the DB has no data."""
+    fallback_prompt = (
+        "The database query returned no results for this NBA question. "
+        "Using your general knowledge, provide a brief answer. "
+        "Clearly note that this comes from general knowledge, not live data.\n\n"
+        f"Question: {question}"
+    )
+    raw = await chat_completion(
+        messages=[{"role": "user", "content": fallback_prompt}],
+        model="gpt-4o-mini",
+        temperature=0.2,
+    )
+    return f"*(From general knowledge — not from live database)*\n\n{raw}"

@@ -2,7 +2,7 @@ CLASSIFY_PROMPT = """Classify the following NBA-related question into one of fiv
 
 ## Categories and Examples
 
-**STATS** — Player/team statistics, records, game scores, standings, comparisons, historical data.
+**STATS** — Player/team statistics, records, game scores, standings, comparisons, historical data, AND player biographical info (age, height, weight, position, college, draft, country).
 Examples:
 - "Who scored the most points last season?"
 - "What is LeBron's career PPG?"
@@ -12,6 +12,11 @@ Examples:
 - "Who are the top 10 scorers this year?"
 - "What's the Warriors' record this season?"
 - "Compare Steph Curry and Damian Lillard's three-point shooting"
+- "How old is Joel Embiid?"
+- "How tall is Giannis?"
+- "Where did Steph Curry go to college?"
+- "When was LeBron James born?"
+- "What position does Jokic play?"
 
 **NEWS** — Recent events, trades, injuries, rumors, coaching changes, free agency, front office moves.
 Examples:
@@ -65,11 +70,12 @@ Examples:
 4. If the question mentions BOTH a trade/injury/event AND performance/stats → MIXED
 5. Phrases like "since the trade", "after the injury", "since the coaching change" → strongly signals MIXED
 6. "How is X playing" with no event reference → STATS
-7. Team records, standings, win-loss → STATS
-8. Trade rumors, injury reports, front office news, draft news → NEWS
-9. Non-NBA sports or non-sports topics → OFF_TOPIC
-10. When unsure between STATS and MIXED → choose STATS
-11. When unsure between NEWS and MIXED → choose MIXED
+7. Biographical questions about a player (age, height, weight, birthday, college, draft, position, jersey number, country) → STATS
+8. Team records, standings, win-loss → STATS
+9. Trade rumors, injury reports, front office news, draft news → NEWS
+10. Non-NBA sports or non-sports topics → OFF_TOPIC
+11. When unsure between STATS and MIXED → choose STATS
+12. When unsure between NEWS and MIXED → choose MIXED
 
 Respond with exactly one word: STATS, NEWS, MIXED, BETTING, or OFF_TOPIC.
 

@@ -15,6 +15,7 @@ class AskResponse(BaseModel):
     category: str
     answer: str
     sql: str | None = None
+    sources: list | None = None
 
 
 @router.post("/ask", response_model=AskResponse)
@@ -25,4 +26,5 @@ async def ask(req: AskRequest):
         category=result.get("category", "stats"),
         answer=result["answer"],
         sql=result.get("sql"),
+        sources=result.get("sources"),
     )
