@@ -8,6 +8,7 @@ router = APIRouter()
 
 class AskRequest(BaseModel):
     question: str
+    message_history: list[dict] | None = None  # [{"role": "user"|"assistant", "content": "..."}]
 
 
 class AskResponse(BaseModel):
@@ -20,7 +21,7 @@ class AskResponse(BaseModel):
 
 @router.post("/ask", response_model=AskResponse)
 async def ask(req: AskRequest):
-    result = await route_question(req.question)
+    result = await route_question(req.question, message_history=req.message_history)
     return AskResponse(
         question=req.question,
         category=result.get("category", "stats"),

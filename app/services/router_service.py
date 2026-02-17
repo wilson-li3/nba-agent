@@ -2,10 +2,29 @@ import asyncio
 
 from app.prompts.classify import CLASSIFY_PROMPT
 from app.prompts.normalize import NORMALIZE_PROMPT
+from app.prompts.resolve_context import RESOLVE_CONTEXT_PROMPT
 from app.services.betting_service import answer_betting_question
 from app.services.llm import chat_completion
 from app.services.news_service import answer_news_question
 from app.services.stats_service import answer_stats_question
+
+
+async def resolve_context(question: str, message_history: list[dict]) -> str:
+    """Rewrite a follow-up question into a standalone question using conversation history."""
+    history_lines = []
+    for msg in message_history[-10:]:
+        role = msg.get("role", "user").capitalize()
+        history_lines.append(f"{role}: {msg.get('content', '')}")
+    history_text = "\n".join(history_lines)
+
+    prompt = RESOLVE_CONTEXT_PROMPT.format(history=history_text, question=question)
+    result = await chat_completion(
+        messages=[{"role": "user", "content": prompt}],
+        model="gpt-4o-mini",
+        temperature=0.0,
+        max_tokens=200,
+    )
+    return result.strip()
 
 
 async def normalize_question(question: str) -> str:
@@ -35,8 +54,10 @@ async def classify_question(question: str) -> str:
     return category
 
 
-async def route_question(question: str) -> dict:
-    """Normalize the question, classify it, and dispatch to the appropriate service(s)."""
+async def route_question(question: str, message_history: list[dict] | None = None) -> dict:
+    """Resolve context if needed, normalize the question, classify it, and dispatch."""
+    if message_history:
+        question = await resolve_context(question, message_history)
     normalized = await normalize_question(question)
     category = await classify_question(normalized)
 

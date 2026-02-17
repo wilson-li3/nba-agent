@@ -465,6 +465,7 @@ const landingEl = document.getElementById('landing');
 const chatViewEl = document.getElementById('chatView');
 const chatInputArea = document.getElementById('chatInputArea');
 let chatActive = false;
+let conversationHistory = [];
 
 function switchToChat() {
   if (chatActive) return;
@@ -484,6 +485,8 @@ form.addEventListener('submit', async (e) => {
   switchToChat();
 
   addMessage(question, 'user');
+  const historySnapshot = conversationHistory.slice(-10);
+  conversationHistory.push({ role: 'user', content: question });
   input.value = '';
   sendBtn.disabled = true;
 
@@ -510,12 +513,16 @@ form.addEventListener('submit', async (e) => {
     const res = await fetch('/ask', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ question }),
+      body: JSON.stringify({
+        question,
+        message_history: historySnapshot,
+      }),
     });
     if (!res.ok) throw new Error(`Server error: ${res.status}`);
     const data = await res.json();
     loader.remove();
     addAssistantMessage(data);
+    conversationHistory.push({ role: 'assistant', content: data.answer || '' });
   } catch (err) {
     loader.remove();
     addAssistantMessage({
