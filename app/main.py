@@ -1,12 +1,17 @@
 import subprocess
 import sys
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import FastAPI
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.db import close_pool, create_pool
 from app.routers import ask, health
+
+FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
 
 scheduler = AsyncIOScheduler()
 
@@ -30,3 +35,11 @@ app = FastAPI(title="NBA Intelligence Assistant", lifespan=lifespan)
 
 app.include_router(health.router)
 app.include_router(ask.router)
+
+
+@app.get("/")
+async def index():
+    return FileResponse(FRONTEND_DIR / "index.html")
+
+
+app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")

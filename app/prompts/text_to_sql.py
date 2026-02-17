@@ -43,6 +43,21 @@ You have access to a PostgreSQL database with NBA statistics. Here is the schema
 **mv_team_back_to_backs** — flags games where a team played the previous day
 - team_id (BIGINT), game_id (TEXT), game_date (DATE), season_id (TEXT), is_b2b (BOOLEAN)
 
+**mv_player_prop_hit_rates** — precomputed prop bet hit counts at common lines for active players (current season)
+- player_id, display_name
+- games_last_10, games_last_20
+- Hit counts last 10: pts_15_hit_last10, pts_20_hit_last10, pts_25_hit_last10, pts_30_hit_last10, reb_6_hit_last10, reb_8_hit_last10, reb_10_hit_last10, ast_4_hit_last10, ast_6_hit_last10, ast_8_hit_last10, fg3m_2_hit_last10, fg3m_3_hit_last10, fg3m_4_hit_last10, pra_30_hit_last10, pra_40_hit_last10
+- Hit counts last 20: same columns with _last20 suffix
+- Last 10 stats: avg_pts_last10, stddev_pts_last10, min_pts_last10, max_pts_last10, avg_reb_last10, stddev_reb_last10, min_reb_last10, max_reb_last10, avg_ast_last10, stddev_ast_last10, min_ast_last10, max_ast_last10, avg_fg3m_last10, avg_pra_last10
+
+**mv_player_home_away_splits** — per-player home vs away averages (current season)
+- player_id, display_name, location (TEXT: 'Home' or 'Away')
+- games, ppg, rpg, apg, fg3mpg, stddev_pts, fg_pct
+
+**mv_team_defensive_ratings** — per-team: average stats allowed to opponents (current season)
+- team_id, team_abbr, team_name
+- games_against, opp_ppg_allowed, opp_rpg_allowed, opp_apg_allowed, opp_fg3mpg_allowed
+
 ### Important notes
 - season_id format: the year the season started, e.g. '2023-24' for the 2023-24 season
 - ALWAYS use unaccent() on BOTH the column and the search string when matching player names. Many names have accents (Jokić, Dončić, Vučević). Example: WHERE unaccent(display_name) ILIKE unaccent('%jokic%')
@@ -64,7 +79,12 @@ Rules:
 4. LIMIT results to 25 rows unless the user asks for more.
 5. Use ILIKE for fuzzy name matching. Always wrap player name columns AND the search string in unaccent() to handle accented characters (Jokić, Dončić, Vučević, etc.). Example: WHERE unaccent(display_name) ILIKE unaccent('%jokic%')
 6. Round decimal results to 1-2 decimal places for readability.
-7. If the question is ambiguous, make reasonable assumptions.
+7. When the question is ambiguous, apply these defaults:
+   - No season specified → use season_id = '2024-25'
+   - No specific stat mentioned → include pts, reb, ast at minimum
+   - "Recently" / "lately" → last 10 games
+   - "This month" → game_date >= date_trunc('month', CURRENT_DATE)
+   - Ambiguous player name → assume the most prominent currently active player with that name
 8. For "last N games" or "recent games" queries, use a subquery to select the rows first, then aggregate:
    SELECT ROUND(AVG(pts)::numeric, 1) FROM (SELECT pts FROM player_game_stats WHERE ... ORDER BY game_date DESC LIMIT N) sub;
 9. Never put ORDER BY/LIMIT in the outer query when it conflicts with aggregation.
@@ -182,6 +202,52 @@ GROUP BY p.display_name
 HAVING COUNT(*) FILTER (WHERE pgs2.player_id IS NULL) >= 3
 ORDER BY (AVG(s.pts) FILTER (WHERE pgs2.player_id IS NULL) - AVG(s.pts) FILTER (WHERE pgs2.player_id IS NOT NULL)) DESC
 LIMIT 10;
+
+17. For vague player questions ("tell me about X", "how is X doing"), default to current season averages from mv_player_season_averages:
+SELECT display_name, ppg, rpg, apg, spg, bpg, fg_pct, fg3_pct, ft_pct, games_played
+FROM mv_player_season_averages
+WHERE player_id = (SELECT player_id FROM players WHERE unaccent(display_name) ILIKE unaccent('%name%'))
+  AND season_id = '2024-25';
+
+18. For "best" / "top" questions without a specific stat, rank by PPG and include RPG/APG:
+SELECT display_name, ppg, rpg, apg, games_played
+FROM mv_player_season_averages
+WHERE season_id = '2024-25'
+ORDER BY ppg DESC
+LIMIT 10;
+
+19. For team "how are they doing" questions, aggregate wins/losses from the games table:
+SELECT
+    COUNT(*) FILTER (WHERE (home_team_abbr = 'TEAM' AND home_wl = 'W') OR (away_team_abbr = 'TEAM' AND away_wl = 'W')) AS wins,
+    COUNT(*) FILTER (WHERE (home_team_abbr = 'TEAM' AND home_wl = 'L') OR (away_team_abbr = 'TEAM' AND away_wl = 'L')) AS losses
+FROM games
+WHERE (home_team_abbr = 'TEAM' OR away_team_abbr = 'TEAM')
+  AND season_id = '2024-25' AND season_type = 'Regular Season';
+
+20. For "all-time" / "greatest" / "career leader" questions, use mv_player_career_totals:
+SELECT display_name, total_pts, ppg, rpg, apg, games_played
+FROM mv_player_career_totals
+ORDER BY total_pts DESC
+LIMIT 10;
+Adjust the ORDER BY column to match the stat asked about (e.g., rpg for rebounds, apg for assists).
+
+21. For "consistency" / "reliability" questions, show stddev, min, and max alongside averages:
+SELECT p.display_name,
+       ROUND(AVG(s.pts)::numeric, 1) AS avg_pts,
+       ROUND(STDDEV(s.pts)::numeric, 1) AS stddev_pts,
+       MIN(s.pts) AS min_pts, MAX(s.pts) AS max_pts,
+       COUNT(*) AS games
+FROM player_game_stats s
+JOIN players p USING (player_id)
+WHERE unaccent(p.display_name) ILIKE unaccent('%name%')
+  AND s.season_id = '2024-25'
+GROUP BY p.display_name;
+
+22. For multi-season comparison questions, pull multiple seasons from mv_player_season_averages:
+SELECT display_name, season_id, ppg, rpg, apg, fg_pct, games_played
+FROM mv_player_season_averages
+WHERE player_id = (SELECT player_id FROM players WHERE unaccent(display_name) ILIKE unaccent('%name%'))
+ORDER BY season_id DESC;
 
 User question: {question}
 """
