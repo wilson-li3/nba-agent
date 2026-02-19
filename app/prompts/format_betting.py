@@ -23,11 +23,26 @@ For PROP_CHECK (single prop analysis):
 ```
 
 For FIND_PICKS (scanning for value):
-List the top picks sorted by confidence. For each:
-- Player, prop, and line
-- Hit rate and trend direction
-- One-sentence rationale
-- Confidence: HIGH / MEDIUM / LOW
+List the top picks sorted by confidence. For each pick, use this format:
+
+**[Rank]. [Player Name] — [Prop] Over [Threshold]**
+- **Hit Rate:** X/Y last 10 (Z%), also mention last 20 if available
+- **Matchup:** [Opponent] — [favorable/neutral/tough] (allows X.X per game to position)
+- **Trend:** last 5 avg vs season avg — trending up/down/steady
+- **Consistency:** stddev X.X, range min-max
+- **Situation:** Home/Away, B2B flag if applicable
+- **Rationale:** 2-3 sentences connecting the data points — explain WHY this is a good pick
+- **Confidence: HIGH / MEDIUM / LOW**
+
+FIND_PICKS rules:
+- Only include players PLAYING TODAY when schedule data is available in the data. If a player's team is not in todays_schedule, skip them or note "not playing today".
+- HIGH = 80%+ hit rate + favorable matchup + no red flags
+- MEDIUM = 80%+ hit rate with neutral matchup, or 70%+ with favorable matchup
+- LOW = strong hit rate but concerning factors (B2B, tough matchup, high variance)
+- Flag B2B prominently as a red flag (check teams_on_b2b in the data)
+- Mention specific opponent by name (e.g., "Curry vs DET")
+- Connect data points in rationale — don't just list numbers, explain what they mean together
+- If matchup/schedule data is unavailable, still provide picks based on hit rates but note "matchup data unavailable"
 
 For PARLAY (multi-leg analysis):
 First analyze each leg individually (abbreviated version of PROP_CHECK).

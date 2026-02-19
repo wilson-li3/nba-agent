@@ -7,6 +7,7 @@ from app.db import get_pool
 from app.prompts.format_betting import FORMAT_BETTING_PROMPT
 from app.prompts.parse_betting import PARSE_BETTING_PROMPT
 from app.services.llm import chat_completion
+from app.services.scores_service import get_scores
 
 logger = logging.getLogger(__name__)
 
@@ -183,6 +184,46 @@ LIMIT 15;
     return sql, []
 
 
+async def _get_todays_schedule() -> dict[str, dict]:
+    """Return {team_abbr: {"opponent": opp_abbr, "location": "home"|"away"}} for today's games."""
+    try:
+        scores = await get_scores()
+    except Exception:
+        logger.warning("Could not fetch today's schedule", exc_info=True)
+        return {}
+    schedule: dict[str, dict] = {}
+    for g in scores.get("games", []):
+        home = g.get("home_team_abbr")
+        away = g.get("away_team_abbr")
+        if home and away:
+            schedule[home] = {"opponent": away, "location": "home"}
+            schedule[away] = {"opponent": home, "location": "away"}
+    return schedule
+
+
+def _build_player_team_query(player_names: list[str]) -> tuple[str, list]:
+    """Batch-resolve player names to their current team abbreviations."""
+    placeholders = ", ".join(f"unaccent('%' || ${i+1} || '%')" for i in range(len(player_names)))
+    sql = f"""
+SELECT p.display_name, t.abbreviation AS team_abbr
+FROM players p
+JOIN teams t ON t.team_id = p.team_id
+WHERE unaccent(p.display_name) ILIKE ANY(ARRAY[{placeholders}]);
+"""
+    return sql, player_names
+
+
+def _build_b2b_today_query() -> tuple[str, list]:
+    """Find teams that played yesterday (potential B2B if also playing today)."""
+    sql = """
+SELECT DISTINCT t.abbreviation AS team_abbr
+FROM mv_team_back_to_backs b
+JOIN teams t ON t.team_id = b.team_id
+WHERE b.game_date = CURRENT_DATE - 1;
+"""
+    return sql, []
+
+
 # --- Team abbreviation mapping for opponent resolution ---
 TEAM_ABBR_MAP = {
     "hawks": "ATL", "celtics": "BOS", "nets": "BKN", "hornets": "CHA",
@@ -309,9 +350,103 @@ async def answer_betting_question(
             collected_data["requested_prop"] = props[0]
 
     elif intent_type == "FIND_PICKS":
-        sql, params = _build_find_picks_query()
-        results = await _execute_query(pool, sql, params)
-        collected_data["high_hit_rate_props"] = results
+        if players:
+            # Player-specific picks — gather data + auto-detect opponents
+            # Pre-fetch context in parallel
+            schedule_task = asyncio.create_task(_get_todays_schedule())
+            b2b_sql, b2b_params = _build_b2b_today_query()
+            b2b_task = asyncio.create_task(_execute_query(pool, b2b_sql, b2b_params))
+            pt_sql, pt_params = _build_player_team_query(players[:3])
+            pt_task = asyncio.create_task(_execute_query(pool, pt_sql, pt_params))
+
+            schedule, b2b_rows, pt_rows = await asyncio.gather(
+                schedule_task, b2b_task, pt_task
+            )
+            b2b_teams = {r["team_abbr"] for r in b2b_rows}
+            player_team_map = {r["display_name"]: r["team_abbr"] for r in pt_rows}
+
+            collected_data["todays_schedule"] = schedule
+            collected_data["teams_on_b2b"] = list(b2b_teams)
+            collected_data["player_teams"] = player_team_map
+
+            # Collect all unique opponents for defense queries
+            opp_set: set[str] = set()
+            if opponent_abbr:
+                opp_set.add(opponent_abbr)
+
+            for player_name in players[:3]:
+                prefix = player_name.replace(" ", "_")
+                queries = {
+                    f"{prefix}_hit_rate": _build_hit_rate_query(player_name),
+                    f"{prefix}_trend": _build_trend_query(player_name),
+                    f"{prefix}_splits": _build_splits_query(player_name),
+                }
+                # Use explicit opponent or auto-detect from schedule
+                effective_opp = opponent_abbr
+                if not effective_opp:
+                    team = player_team_map.get(player_name)
+                    if team and team in schedule:
+                        effective_opp = schedule[team]["opponent"]
+                if effective_opp:
+                    queries[f"{prefix}_matchup"] = _build_matchup_query(player_name, effective_opp)
+                    opp_set.add(effective_opp)
+
+                keys = list(queries.keys())
+                results = await asyncio.gather(
+                    *[_execute_query(pool, *queries[k]) for k in keys]
+                )
+                for k, r in zip(keys, results):
+                    collected_data[k] = r
+
+            # Fetch opponent defense for all relevant opponents in parallel
+            if opp_set:
+                opp_list = list(opp_set)
+                def_results = await asyncio.gather(
+                    *[_execute_query(pool, *_build_opp_defense_query(o)) for o in opp_list]
+                )
+                collected_data["opponent_defense"] = {
+                    opp: res for opp, res in zip(opp_list, def_results) if res
+                }
+        else:
+            # League-wide scan (no player specified)
+            picks_sql, picks_params = _build_find_picks_query()
+            b2b_sql, b2b_params = _build_b2b_today_query()
+
+            # Parallel: hit rates + schedule + B2B
+            picks_task = asyncio.create_task(_execute_query(pool, picks_sql, picks_params))
+            schedule_task = asyncio.create_task(_get_todays_schedule())
+            b2b_task = asyncio.create_task(_execute_query(pool, b2b_sql, b2b_params))
+
+            pick_results, schedule, b2b_rows = await asyncio.gather(
+                picks_task, schedule_task, b2b_task
+            )
+            collected_data["high_hit_rate_props"] = pick_results
+            collected_data["todays_schedule"] = schedule
+            collected_data["teams_on_b2b"] = [r["team_abbr"] for r in b2b_rows]
+
+            # Resolve player names from pick results to teams
+            if pick_results:
+                player_names = [r["display_name"] for r in pick_results]
+                pt_sql, pt_params = _build_player_team_query(player_names)
+                pt_rows = await _execute_query(pool, pt_sql, pt_params)
+                player_team_map = {r["display_name"]: r["team_abbr"] for r in pt_rows}
+                collected_data["player_teams"] = player_team_map
+
+                # Find unique opponents for players playing today
+                opp_set: set[str] = set()
+                for name, team in player_team_map.items():
+                    if team in schedule:
+                        opp_set.add(schedule[team]["opponent"])
+
+                # Fetch opponent defense in parallel
+                if opp_set:
+                    opp_list = list(opp_set)
+                    def_results = await asyncio.gather(
+                        *[_execute_query(pool, *_build_opp_defense_query(o)) for o in opp_list]
+                    )
+                    collected_data["opponent_defense"] = {
+                        opp: res for opp, res in zip(opp_list, def_results) if res
+                    }
 
     elif intent_type == "PARLAY" and props:
         # Analyze each leg in parallel
