@@ -36,6 +36,21 @@ def _fetch_upcoming() -> dict:
     """Check next 2 days for upcoming games if none today."""
     from nba_api.stats.endpoints import scoreboardv2
 
+    # ScoreboardV2 game_header has team IDs but not abbreviations —
+    # map them via the GAMECODE column (format: YYYYMMDD/AWYHOM).
+    _TEAM_ID_TO_ABBR: dict[int, str] = {
+        1610612737: "ATL", 1610612738: "BOS", 1610612751: "BKN",
+        1610612766: "CHA", 1610612741: "CHI", 1610612739: "CLE",
+        1610612742: "DAL", 1610612743: "DEN", 1610612765: "DET",
+        1610612744: "GSW", 1610612745: "HOU", 1610612754: "IND",
+        1610612746: "LAC", 1610612747: "LAL", 1610612763: "MEM",
+        1610612748: "MIA", 1610612749: "MIL", 1610612750: "MIN",
+        1610612740: "NOP", 1610612752: "NYK", 1610612760: "OKC",
+        1610612753: "ORL", 1610612755: "PHI", 1610612756: "PHX",
+        1610612757: "POR", 1610612758: "SAC", 1610612759: "SAS",
+        1610612761: "TOR", 1610612762: "UTA", 1610612764: "WAS",
+    }
+
     today = datetime.now()
     for offset in range(1, 3):
         target = today + timedelta(days=offset)
@@ -53,9 +68,11 @@ def _fetch_upcoming() -> dict:
             games = []
             for row in rows:
                 row_dict = dict(zip(col_names, row))
+                home_id = row_dict.get("HOME_TEAM_ID")
+                away_id = row_dict.get("VISITOR_TEAM_ID")
                 games.append({
-                    "home_team_abbr": row_dict.get("HOME_TEAM_ABBREVIATION", ""),
-                    "away_team_abbr": row_dict.get("VISITOR_TEAM_ABBREVIATION", ""),
+                    "home_team_abbr": _TEAM_ID_TO_ABBR.get(home_id, ""),
+                    "away_team_abbr": _TEAM_ID_TO_ABBR.get(away_id, ""),
                     "home_pts": None,
                     "away_pts": None,
                     "game_status_text": row_dict.get("GAME_STATUS_TEXT", ""),
