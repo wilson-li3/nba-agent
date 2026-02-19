@@ -24,6 +24,8 @@ def _fetch_scoreboard_today() -> dict:
         games.append({
             "home_team_abbr": home.get("teamTricode", ""),
             "away_team_abbr": away.get("teamTricode", ""),
+            "home_team_id": home.get("teamId"),
+            "away_team_id": away.get("teamId"),
             "home_pts": home.get("score", 0) or None,
             "away_pts": away.get("score", 0) or None,
             "game_status_text": g.get("gameStatusText", ""),
@@ -73,6 +75,8 @@ def _fetch_upcoming() -> dict:
                 games.append({
                     "home_team_abbr": _TEAM_ID_TO_ABBR.get(home_id, ""),
                     "away_team_abbr": _TEAM_ID_TO_ABBR.get(away_id, ""),
+                    "home_team_id": home_id,
+                    "away_team_id": away_id,
                     "home_pts": None,
                     "away_pts": None,
                     "game_status_text": row_dict.get("GAME_STATUS_TEXT", ""),

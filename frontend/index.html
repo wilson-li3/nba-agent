@@ -376,6 +376,11 @@ html,body{
   0%,100%{opacity:1}
   50%{opacity:0.3}
 }
+.team-logo{
+  width:18px; height:18px;
+  object-fit:contain;
+  vertical-align:middle;
+}
 
 /* ─── MARKDOWN IN ASSISTANT MESSAGES ─── */
 .message.assistant h1,.message.assistant h2,.message.assistant h3,
@@ -595,6 +600,11 @@ async function fetchHeadlines() {
   } catch (e) { /* keep placeholder */ }
 }
 
+function teamLogo(teamId) {
+  if (!teamId) return '';
+  return `<img src="https://cdn.nba.com/logos/nba/${teamId}/primary/L/logo.svg" class="team-logo" alt="">`;
+}
+
 // ─── Scores ───
 async function fetchScores() {
   try {
@@ -608,9 +618,9 @@ async function fetchScores() {
         const isLive = statusText.match(/^\d/) && !statusText.match(/final/i);
         const liveDot = isLive ? '<span class="live-dot"></span>' : '';
         if (hasScore) {
-          return `<span class="game-chip">${liveDot}${escapeHtml(g.away_team_abbr)} ${g.away_pts} - ${g.home_pts} ${escapeHtml(g.home_team_abbr)} <small>${escapeHtml(statusText)}</small></span>`;
+          return `<span class="game-chip">${liveDot}${teamLogo(g.away_team_id)}${escapeHtml(g.away_team_abbr)} ${g.away_pts} - ${g.home_pts} ${teamLogo(g.home_team_id)}${escapeHtml(g.home_team_abbr)} <small>${escapeHtml(statusText)}</small></span>`;
         } else {
-          return `<span class="game-chip">${escapeHtml(g.away_team_abbr)} @ ${escapeHtml(g.home_team_abbr)} <small>${escapeHtml(statusText)}</small></span>`;
+          return `<span class="game-chip">${teamLogo(g.away_team_id)}${escapeHtml(g.away_team_abbr)} @ ${teamLogo(g.home_team_id)}${escapeHtml(g.home_team_abbr)} <small>${escapeHtml(statusText)}</small></span>`;
         }
       }).join(' ');
       scoresContent.innerHTML = label + chips;

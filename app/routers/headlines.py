@@ -17,6 +17,8 @@ async def headlines():
             rows = await conn.fetch("""
                 SELECT title, url, source, published_at
                 FROM news_articles
+                WHERE source IN ('ESPN NBA', 'CBS Sports NBA', 'NBA.com', 'RealGM NBA')
+                   OR title ~* '(NBA|trade|free agent|playoff|All.Star|draft lottery)'
                 ORDER BY published_at DESC NULLS LAST
                 LIMIT 5
             """)
