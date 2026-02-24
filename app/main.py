@@ -9,7 +9,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.db import close_pool, create_pool
-from app.routers import ask, health, headlines, scores
+from app.routers import ask, game_preview, health, headlines, scores
 
 FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
 
@@ -37,6 +37,7 @@ app.include_router(health.router)
 app.include_router(ask.router)
 app.include_router(headlines.router)
 app.include_router(scores.router)
+app.include_router(game_preview.router)
 
 
 @app.get("/")

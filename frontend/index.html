@@ -365,6 +365,12 @@ html,body{
   font-weight:500;
   white-space:nowrap;
   background:white;
+  cursor:pointer;
+  transition:background 0.15s, border-color 0.15s;
+}
+.game-chip:hover{
+  background:var(--orange-pale);
+  border-color:var(--orange-light);
 }
 .live-dot{
   width:6px;height:6px;
@@ -617,10 +623,17 @@ async function fetchScores() {
         const statusText = g.game_status_text || '';
         const isLive = statusText.match(/^\d/) && !statusText.match(/final/i);
         const liveDot = isLive ? '<span class="live-dot"></span>' : '';
+        const gameData = JSON.stringify({
+          home_team_abbr: g.home_team_abbr,
+          away_team_abbr: g.away_team_abbr,
+          home_team_id: g.home_team_id,
+          away_team_id: g.away_team_id,
+          game_status_text: g.game_status_text
+        }).replace(/'/g, '&#39;');
         if (hasScore) {
-          return `<span class="game-chip">${liveDot}${teamLogo(g.away_team_id)}${escapeHtml(g.away_team_abbr)} ${g.away_pts} - ${g.home_pts} ${teamLogo(g.home_team_id)}${escapeHtml(g.home_team_abbr)} <small>${escapeHtml(statusText)}</small></span>`;
+          return `<span class="game-chip" onclick='startGamePreview(${gameData})'>${liveDot}${teamLogo(g.away_team_id)}${escapeHtml(g.away_team_abbr)} ${g.away_pts} - ${g.home_pts} ${teamLogo(g.home_team_id)}${escapeHtml(g.home_team_abbr)} <small>${escapeHtml(statusText)}</small></span>`;
         } else {
-          return `<span class="game-chip">${teamLogo(g.away_team_id)}${escapeHtml(g.away_team_abbr)} @ ${teamLogo(g.home_team_id)}${escapeHtml(g.home_team_abbr)} <small>${escapeHtml(statusText)}</small></span>`;
+          return `<span class="game-chip" onclick='startGamePreview(${gameData})'>${teamLogo(g.away_team_id)}${escapeHtml(g.away_team_abbr)} @ ${teamLogo(g.home_team_id)}${escapeHtml(g.home_team_abbr)} <small>${escapeHtml(statusText)}</small></span>`;
         }
       }).join(' ');
       scoresContent.innerHTML = label + chips;
@@ -716,7 +729,8 @@ function addAssistantMessage(data) {
   if (data.category) {
     const labels = {
       stats:'Stats', news:'News', mixed:'Mixed',
-      betting:'Betting', off_topic:'Off Topic', error:'Error'
+      betting:'Betting', off_topic:'Off Topic', error:'Error',
+      game_preview:'Game Preview'
     };
     html += `<div class="category-badge">${labels[data.category] || data.category}</div>`;
   }
@@ -757,6 +771,61 @@ function escapeHtml(str) {
 
 function scrollToBottom() {
   messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+async function startGamePreview(game) {
+  switchToChat();
+
+  const userMsg = `\u{1F3C0} ${game.away_team_abbr} @ ${game.home_team_abbr} \u2014 Game Preview`;
+  addMessage(userMsg, 'user');
+  conversationHistory.push({ role: 'user', content: userMsg });
+
+  sendBtn.disabled = true;
+
+  const loader = document.createElement('div');
+  loader.className = 'loading';
+  loader.innerHTML = `
+    <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="24" cy="24" r="20" fill="#D4782F"/>
+      <circle cx="24" cy="24" r="20" stroke="#2D2D2D" stroke-width="1.2" fill="none"/>
+      <line x1="4" y1="24" x2="44" y2="24" stroke="#2D2D2D" stroke-width="1"/>
+      <line x1="24" y1="4" x2="24" y2="44" stroke="#2D2D2D" stroke-width="1"/>
+      <path d="M24 4 C16 12, 16 36, 24 44" stroke="#2D2D2D" stroke-width="1" fill="none"/>
+      <path d="M24 4 C32 12, 32 36, 24 44" stroke="#2D2D2D" stroke-width="1" fill="none"/>
+      <ellipse cx="19" cy="18" rx="3" ry="4" fill="rgba(255,255,255,0.18)" transform="rotate(-25 19 18)"/>
+    </svg>
+    <div class="ball-shadow"></div>
+    <span class="loading-text">Building preview...</span>
+  `;
+  messagesEl.appendChild(loader);
+  scrollToBottom();
+
+  try {
+    const res = await fetch('/game-preview', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        home_team_abbr: game.home_team_abbr,
+        away_team_abbr: game.away_team_abbr,
+        home_team_id: game.home_team_id,
+        away_team_id: game.away_team_id,
+      }),
+    });
+    if (!res.ok) throw new Error(`Server error: ${res.status}`);
+    const data = await res.json();
+    loader.remove();
+    addAssistantMessage(data);
+    conversationHistory.push({ role: 'assistant', content: data.answer || '' });
+  } catch (err) {
+    loader.remove();
+    addAssistantMessage({
+      answer: 'Something went wrong generating the game preview. Please try again.',
+      category: 'error'
+    });
+  } finally {
+    sendBtn.disabled = false;
+    input.focus();
+  }
 }
 </script>
 </body>
