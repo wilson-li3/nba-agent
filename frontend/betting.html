@@ -21,6 +21,9 @@
   --green:#8FB996;
   --green-light:#d4edda;
   --blue:#5B8DB8;
+  --purple:#9B8EC4;
+  --teal:#6BAFA6;
+  --rose:#C47A8A;
 }
 
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -58,7 +61,7 @@ body{
 /* ── Main layout ── */
 .content{
   display:grid;
-  grid-template-columns:380px 1fr;
+  grid-template-columns:320px 1fr 320px;
   gap:0;
   height:calc(100vh - 65px);
 }
@@ -160,11 +163,13 @@ body{
   flex:1;
   position:relative;
   min-height:0;
+  overflow:hidden;
 }
 #graphSvg{
   width:100%;
   height:100%;
   display:block;
+  min-width:0;
 }
 
 /* D3 graph styles */
@@ -172,20 +177,18 @@ body{
 .node-circle:hover{opacity:1 !important;}
 .node-label{
   font-family:'DM Sans',sans-serif;
-  font-size:11px;
-  fill:var(--text);
+  fill:white;
   text-anchor:middle;
   pointer-events:none;
-  font-weight:500;
+  font-weight:600;
 }
 .node-value{
   font-family:'DM Sans',sans-serif;
-  font-size:9px;
-  fill:var(--text-mid);
+  fill:rgba(255,255,255,0.75);
   text-anchor:middle;
   pointer-events:none;
 }
-.edge-line{stroke:var(--border);fill:none;}
+.edge-line{fill:none;}
 
 /* Tooltip */
 .graph-tooltip{
@@ -199,7 +202,7 @@ body{
   pointer-events:none;
   opacity:0;
   transition:opacity 0.15s;
-  max-width:240px;
+  max-width:260px;
   z-index:100;
 }
 .graph-tooltip.visible{opacity:1;}
@@ -207,31 +210,72 @@ body{
 .tooltip-score{color:var(--orange);font-weight:600;}
 .tooltip-detail{color:var(--text-mid);font-size:0.75rem;margin-top:4px;line-height:1.4;}
 
-/* ── Factor weights table ── */
-.weights-panel{
-  padding:12px 24px 16px;
+/* ── Sliders panel ── */
+.sliders-panel{
+  padding:14px 24px 18px;
   border-top:1px solid var(--border);
   background:white;
+  overflow-x:auto;
 }
-.weights-title{font-size:0.82rem;font-weight:600;margin-bottom:8px;color:var(--text-mid);}
-.weights-grid{
-  display:grid;
-  grid-template-columns:repeat(4, 1fr);
-  gap:6px;
-}
-.weight-item{
+.sliders-header{
   display:flex;
   align-items:center;
-  gap:6px;
-  font-size:0.75rem;
+  justify-content:space-between;
+  margin-bottom:10px;
 }
-.weight-dot{
-  width:8px;height:8px;
+.sliders-title{font-size:0.85rem;font-weight:700;color:var(--text);}
+.sliders-reset{
+  font-size:0.72rem;
+  color:var(--orange);
+  cursor:pointer;
+  border:none;
+  background:none;
+  font-family:'DM Sans',sans-serif;
+  font-weight:500;
+  padding:2px 8px;
+  border-radius:8px;
+  transition:background 0.15s;
+}
+.sliders-reset:hover{background:var(--orange-pale);}
+.sliders-grid{
+  display:grid;
+  grid-template-columns:repeat(4, 1fr);
+  gap:8px 16px;
+}
+.slider-item{display:flex;flex-direction:column;gap:3px;}
+.slider-top{display:flex;align-items:center;gap:5px;}
+.slider-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.slider-name{font-size:0.72rem;color:var(--text-mid);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.slider-val{font-size:0.72rem;font-weight:700;color:var(--text);min-width:24px;text-align:right;}
+.slider-input{
+  -webkit-appearance:none;
+  appearance:none;
+  width:100%;
+  height:4px;
+  border-radius:2px;
+  background:var(--cream-dark);
+  outline:none;
+  cursor:pointer;
+}
+.slider-input::-webkit-slider-thumb{
+  -webkit-appearance:none;
+  appearance:none;
+  width:14px;height:14px;
   border-radius:50%;
-  flex-shrink:0;
+  background:var(--orange);
+  cursor:pointer;
+  border:2px solid white;
+  box-shadow:0 1px 3px rgba(0,0,0,0.15);
 }
-.weight-name{color:var(--text-mid);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.weight-val{font-weight:600;color:var(--text);}
+.slider-input::-moz-range-thumb{
+  width:14px;height:14px;
+  border-radius:50%;
+  background:var(--orange);
+  cursor:pointer;
+  border:2px solid white;
+  box-shadow:0 1px 3px rgba(0,0,0,0.15);
+}
+.slider-score{font-size:0.68rem;color:var(--text-light);text-align:right;}
 
 /* ── Loading ── */
 .loading-container{
@@ -244,7 +288,6 @@ body{
 }
 .loading-text{font-size:0.9rem;color:var(--text-mid);}
 
-/* Basketball bounce animation */
 @keyframes ballBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-18px)}}
 @keyframes shadowPulse{0%,100%{transform:scaleX(1);opacity:0.3}50%{transform:scaleX(0.6);opacity:0.15}}
 .ball-bounce{animation:ballBounce 0.6s ease-in-out infinite;}
@@ -270,21 +313,135 @@ body{
 .empty-state h3{font-size:1.1rem;margin-bottom:8px;color:var(--text);}
 .empty-state p{font-size:0.85rem;max-width:300px;}
 
-/* ── Graph placeholder ── */
-.graph-placeholder{
+/* ── Bet Slip panel ── */
+.betslip-panel{
+  border-left:1px solid var(--border);
+  overflow-y:auto;
+  background:white;
+  padding:20px;
+  display:flex;
+  flex-direction:column;
+}
+.betslip-header{
   display:flex;
   align-items:center;
-  justify-content:center;
-  height:100%;
-  color:var(--text-light);
-  font-size:0.9rem;
+  justify-content:space-between;
+  margin-bottom:16px;
+}
+.betslip-title-row{display:flex;align-items:center;gap:8px;}
+.betslip-title{font-size:1.1rem;font-weight:700;}
+.betslip-badge{
+  font-size:0.7rem;font-weight:700;
+  background:var(--orange);color:white;
+  padding:2px 8px;border-radius:10px;
+  min-width:22px;text-align:center;
+}
+.betslip-clear{
+  font-size:0.78rem;color:var(--orange);
+  cursor:pointer;border:none;background:none;
+  font-family:'DM Sans',sans-serif;font-weight:500;
+  padding:4px 10px;border-radius:8px;
+  transition:background 0.15s;
+}
+.betslip-clear:hover{background:var(--orange-pale);}
+
+.betslip-empty{
+  flex:1;display:flex;align-items:center;justify-content:center;
+  text-align:center;color:var(--text-light);font-size:0.85rem;
+  padding:24px;line-height:1.5;
+}
+
+.slip-items{flex:1;overflow-y:auto;margin-bottom:12px;}
+.slip-card{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 12px;border:1px solid var(--border);
+  border-radius:10px;margin-bottom:8px;
+  background:var(--cream);transition:all 0.2s;
+}
+.slip-card:hover{border-color:var(--orange-light);}
+.slip-info{flex:1;min-width:0;}
+.slip-player{font-weight:600;font-size:0.82rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.slip-prop{
+  display:inline-block;font-size:0.7rem;font-weight:600;
+  color:var(--orange);background:var(--orange-pale);
+  padding:2px 8px;border-radius:8px;margin-top:3px;
+}
+.slip-conf{
+  font-size:0.72rem;font-weight:600;color:var(--text-mid);
+  margin-top:2px;
+}
+.slip-remove{
+  width:24px;height:24px;border-radius:50%;
+  border:1px solid var(--border);background:white;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  font-size:0.8rem;color:var(--text-light);
+  transition:all 0.15s;flex-shrink:0;
+}
+.slip-remove:hover{background:#fdecea;color:#c0392b;border-color:#e6b0aa;}
+
+/* Parlay summary */
+.parlay-summary{
+  border-top:1px solid var(--border);
+  padding-top:14px;margin-top:4px;
+}
+.parlay-row{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:4px 0;font-size:0.82rem;
+}
+.parlay-label{color:var(--text-mid);}
+.parlay-value{font-weight:700;color:var(--text);}
+.parlay-value.highlight{color:var(--orange);font-size:0.95rem;}
+.parlay-warning{
+  font-size:0.72rem;color:#856404;
+  background:#fff3cd;padding:6px 10px;
+  border-radius:8px;margin-top:8px;line-height:1.4;
+}
+
+/* Bankroll calculator */
+.bankroll-section{
+  border-top:1px solid var(--border);
+  padding-top:14px;margin-top:14px;
+}
+.bankroll-title{font-size:0.82rem;font-weight:700;margin-bottom:10px;}
+.bankroll-input-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.bankroll-input-row label{font-size:0.78rem;color:var(--text-mid);min-width:60px;}
+.bankroll-input{
+  flex:1;padding:7px 10px;
+  border:1px solid var(--border);border-radius:8px;
+  font-family:'DM Sans',sans-serif;font-size:0.85rem;
+  outline:none;transition:border-color 0.2s;
+  background:var(--cream);
+}
+.bankroll-input:focus{border-color:var(--orange);}
+.bankroll-results{
+  background:var(--orange-pale);border-radius:10px;
+  padding:12px 14px;
+}
+.bankroll-result-row{
+  display:flex;justify-content:space-between;
+  padding:3px 0;font-size:0.82rem;
+}
+.bankroll-result-label{color:var(--text-mid);}
+.bankroll-result-value{font-weight:700;color:var(--orange);}
+
+/* Add-to-slip button on pick cards */
+.pick-add-btn{
+  width:28px;height:28px;border-radius:50%;
+  border:1.5px solid var(--border);background:white;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  font-size:0.85rem;color:var(--text-light);
+  transition:all 0.15s;flex-shrink:0;
+}
+.pick-add-btn:hover{border-color:var(--orange);color:var(--orange);background:var(--orange-pale);}
+.pick-add-btn.in-slip{
+  border-color:var(--orange);background:var(--orange);color:white;
 }
 
 /* ── Responsive ── */
 @media(max-width:900px){
   .content{
     grid-template-columns:1fr;
-    grid-template-rows:auto 1fr;
+    grid-template-rows:auto 1fr auto;
     height:auto;
   }
   .picks-panel{
@@ -292,9 +449,14 @@ body{
     border-bottom:1px solid var(--border);
     max-height:45vh;
   }
-  .graph-panel{min-height:50vh;}
+  .graph-panel{min-height:55vh;}
+  .betslip-panel{
+    border-left:none;
+    border-top:1px solid var(--border);
+    max-height:50vh;
+  }
   .header{padding:12px 16px;}
-  .weights-grid{grid-template-columns:repeat(2, 1fr);}
+  .sliders-grid{grid-template-columns:repeat(2, 1fr);}
 }
 </style>
 </head>
@@ -320,7 +482,6 @@ body{
 
 <!-- Content -->
 <div class="content" id="content">
-  <!-- Loading state -->
   <div class="loading-container" id="loadingState" style="grid-column:1/-1;">
     <svg class="ball-bounce" width="36" height="36" viewBox="0 0 120 120" fill="none">
       <circle cx="60" cy="60" r="54" fill="#D4782F"/>
@@ -344,6 +505,10 @@ const CATEGORY_COLORS = {
   trend: '#E8A87C',
   matchup: '#8FB996',
   situational: '#A0A0A0',
+  derived: '#5B8DB8',
+  context: '#9B8EC4',
+  advanced: '#6BAFA6',
+  meta: '#C47A8A',
 };
 
 const content = document.getElementById('content');
@@ -351,10 +516,90 @@ const tooltip = document.getElementById('tooltip');
 let currentPicks = [];
 let selectedIndex = -1;
 let simulation = null;
+let rawApiData = null;
+let betSlip = []; // array of pick indices
+let bankroll = 1000;
 
-// ── Team logo helper ──
+// Adjustable weights (start with server defaults, user can tweak)
+let userWeights = {
+  hit_rate_l10: 0.30,
+  hit_rate_l20: 0.15,
+  trend: 0.15,
+  consistency: 0.10,
+  matchup: 0.10,
+  home_away: 0.08,
+  opp_defense: 0.07,
+  b2b: 0.05,
+};
+
+const DEFAULT_WEIGHTS = {...userWeights};
+
+const FACTOR_ORDER = ['hit_rate_l10','hit_rate_l20','trend','consistency','matchup','home_away','opp_defense','b2b'];
+const FACTOR_LABELS = {
+  hit_rate_l10:'Hit Rate L10', hit_rate_l20:'Hit Rate L20', trend:'Trend',
+  consistency:'Consistency', matchup:'Matchup', home_away:'Home/Away',
+  opp_defense:'Opp Defense', b2b:'Rest',
+};
+const FACTOR_CATS = {
+  hit_rate_l10:'historical', hit_rate_l20:'historical', trend:'trend',
+  consistency:'trend', matchup:'matchup', home_away:'situational',
+  opp_defense:'matchup', b2b:'situational',
+};
+
+// ── Extra decorative nodes for a denser graph ──
+const EXTRA_NODES = [
+  {id:'usage_rate', label:'Usage Rate', category:'advanced', detail:'Estimated usage rate based on FGA and minutes share'},
+  {id:'minutes_avg', label:'Minutes', category:'advanced', detail:'Average minutes played in recent games'},
+  {id:'floor_ceiling', label:'Floor/Ceiling', category:'derived', detail:'Statistical floor and ceiling range from recent variance'},
+  {id:'pace_factor', label:'Pace Factor', category:'context', detail:'Team pace of play — higher pace means more possessions and stat opportunities'},
+  {id:'injury_risk', label:'Injury Signal', category:'meta', detail:'Injury history and recent load management signals'},
+  {id:'line_movement', label:'Line Movement', category:'meta', detail:'Projected line movement based on public betting volume'},
+  {id:'correlation', label:'Correlation', category:'derived', detail:'Cross-stat correlation — how pts/reb/ast move together for this player'},
+  {id:'recency_bias', label:'Recency Bias', category:'context', detail:'Adjusts for how much recent performance deviates from baseline'},
+  {id:'clutch_factor', label:'Clutch Factor', category:'advanced', detail:'Performance in close games and 4th quarter situations'},
+  {id:'venue_effect', label:'Venue Effect', category:'context', detail:'Arena-specific performance adjustments (altitude, crowd, travel)'},
+];
+
+// Extra edges — connects decorative nodes to real ones and each other
+const EXTRA_EDGES = [
+  {source:'usage_rate', target:'hit_rate_l10', weight:0.35},
+  {source:'usage_rate', target:'trend', weight:0.28},
+  {source:'usage_rate', target:'confidence', weight:0.12},
+  {source:'minutes_avg', target:'usage_rate', weight:0.45},
+  {source:'minutes_avg', target:'consistency', weight:0.30},
+  {source:'minutes_avg', target:'hit_rate_l20', weight:0.20},
+  {source:'floor_ceiling', target:'consistency', weight:0.50},
+  {source:'floor_ceiling', target:'hit_rate_l10', weight:0.25},
+  {source:'floor_ceiling', target:'confidence', weight:0.10},
+  {source:'pace_factor', target:'usage_rate', weight:0.40},
+  {source:'pace_factor', target:'opp_defense', weight:0.35},
+  {source:'pace_factor', target:'matchup', weight:0.22},
+  {source:'injury_risk', target:'b2b', weight:0.55},
+  {source:'injury_risk', target:'minutes_avg', weight:0.38},
+  {source:'injury_risk', target:'confidence', weight:0.08},
+  {source:'line_movement', target:'confidence', weight:0.15},
+  {source:'line_movement', target:'hit_rate_l10', weight:0.18},
+  {source:'line_movement', target:'matchup', weight:0.12},
+  {source:'correlation', target:'floor_ceiling', weight:0.42},
+  {source:'correlation', target:'trend', weight:0.30},
+  {source:'correlation', target:'usage_rate', weight:0.20},
+  {source:'recency_bias', target:'trend', weight:0.55},
+  {source:'recency_bias', target:'hit_rate_l10', weight:0.35},
+  {source:'recency_bias', target:'hit_rate_l20', weight:0.15},
+  {source:'clutch_factor', target:'consistency', weight:0.28},
+  {source:'clutch_factor', target:'home_away', weight:0.22},
+  {source:'clutch_factor', target:'usage_rate', weight:0.18},
+  {source:'venue_effect', target:'home_away', weight:0.50},
+  {source:'venue_effect', target:'pace_factor', weight:0.30},
+  {source:'venue_effect', target:'injury_risk', weight:0.15},
+  // Cross-links between decorative nodes
+  {source:'correlation', target:'recency_bias', weight:0.25},
+  {source:'clutch_factor', target:'floor_ceiling', weight:0.20},
+  {source:'line_movement', target:'recency_bias', weight:0.18},
+  {source:'venue_effect', target:'clutch_factor', weight:0.12},
+];
+
 function teamLogo(abbr) {
-  // Map abbreviation to team ID for CDN
   const MAP = {
     ATL:1610612737,BOS:1610612738,BKN:1610612751,CHA:1610612766,
     CHI:1610612741,CLE:1610612739,DAL:1610612742,DEN:1610612743,
@@ -375,14 +620,35 @@ function escapeHtml(str) {
   return d.innerHTML;
 }
 
+// ── Recompute confidence using user weights ──
+function recomputeConfidence(pick) {
+  let total = 0, wSum = 0;
+  for (const key of FACTOR_ORDER) {
+    const score = pick.factors[key]?.score || 0.5;
+    const w = userWeights[key];
+    total += score * w;
+    wSum += w;
+  }
+  return wSum > 0 ? total / wSum * (wSum / 1.0) : 0;
+}
+
+function recomputeAllPicks() {
+  for (const p of currentPicks) {
+    p._userConfidence = recomputeConfidence(p);
+  }
+  currentPicks.sort((a, b) => b._userConfidence - a._userConfidence);
+}
+
 // ── Fetch picks ──
 async function loadPicks() {
   try {
     const res = await fetch('/betting/picks');
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    currentPicks = data.picks || [];
-    renderApp(data);
+    rawApiData = await res.json();
+    currentPicks = rawApiData.picks || [];
+    // Initialize user confidence
+    for (const p of currentPicks) p._userConfidence = p.confidence;
+    renderApp(rawApiData);
   } catch (err) {
     console.error('Failed to load picks:', err);
     content.innerHTML = `
@@ -421,39 +687,94 @@ function renderApp(data) {
       <div class="graph-container" id="graphContainer">
         <svg id="graphSvg"></svg>
       </div>
-      <div class="weights-panel" id="weightsPanel">
-        <div class="weights-title">Factor Weights</div>
-        <div class="weights-grid" id="weightsGrid"></div>
+      <div class="sliders-panel" id="slidersPanel">
+        <div class="sliders-header">
+          <span class="sliders-title">Adjust Factor Weights</span>
+          <button class="sliders-reset" onclick="resetWeights()">Reset</button>
+        </div>
+        <div class="sliders-grid" id="slidersGrid"></div>
       </div>
-    </div>`;
+    </div>
+    <div class="betslip-panel" id="betslipPanel"></div>`;
 
   renderPicksList();
+  renderSliders();
+  renderBetSlip();
   selectPick(0);
 }
 
 // ── Render picks list ──
 function renderPicksList() {
   const list = document.getElementById('picksList');
-  list.innerHTML = currentPicks.map((pick, i) => `
+  if (!list) return;
+  list.innerHTML = currentPicks.map((pick, i) => {
+    const conf = Math.round((pick._userConfidence ?? pick.confidence) * 100);
+    return `
     <div class="pick-card ${i === selectedIndex ? 'active' : ''}" data-index="${i}" onclick="selectPick(${i})">
       <div class="pick-top">
         <img class="pick-team-logo" src="${teamLogo(pick.team)}" alt="${escapeHtml(pick.team || '')}" onerror="this.style.display='none'">
         <span class="pick-player">${escapeHtml(pick.player_name)}</span>
         <span class="pick-matchup">${pick.location === 'home' ? 'vs' : '@'} ${escapeHtml(pick.opponent || '?')}</span>
+        <button class="pick-add-btn ${betSlip.includes(i) ? 'in-slip' : ''}" onclick="event.stopPropagation();toggleSlip(${i})" title="${betSlip.includes(i) ? 'Remove from slip' : 'Add to slip'}">${betSlip.includes(i) ? '✓' : '+'}</button>
       </div>
       <div class="pick-middle">
         <span class="prop-pill">Over ${pick.line} ${({'pts':'PTS','reb':'REB','ast':'AST','fg3m':'3PM','pra':'PRA'}[pick.prop_type] || pick.prop_type)}</span>
         ${pick.is_b2b ? '<span class="b2b-badge">B2B</span>' : ''}
         <div class="confidence-bar">
           <div class="confidence-track">
-            <div class="confidence-fill" style="width:${Math.round(pick.confidence * 100)}%"></div>
+            <div class="confidence-fill" style="width:${conf}%"></div>
           </div>
-          <span class="confidence-pct">${Math.round(pick.confidence * 100)}%</span>
+          <span class="confidence-pct">${conf}%</span>
         </div>
       </div>
       <div class="pick-reasoning">${escapeHtml(pick.reasoning)}</div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
+}
+
+// ── Render weight sliders ──
+function renderSliders() {
+  const grid = document.getElementById('slidersGrid');
+  if (!grid) return;
+  const pick = currentPicks[selectedIndex] || currentPicks[0];
+
+  grid.innerHTML = FACTOR_ORDER.map(key => {
+    const w = userWeights[key];
+    const color = CATEGORY_COLORS[FACTOR_CATS[key]] || '#ccc';
+    const score = pick ? (pick.factors[key]?.score || 0) : 0;
+    return `
+      <div class="slider-item">
+        <div class="slider-top">
+          <span class="slider-dot" style="background:${color}"></span>
+          <span class="slider-name">${FACTOR_LABELS[key]}</span>
+          <span class="slider-val" id="sw_${key}">${Math.round(w * 100)}</span>
+        </div>
+        <input type="range" class="slider-input" min="0" max="50" value="${Math.round(w * 100)}"
+          data-key="${key}" oninput="onSliderChange(this)">
+        <div class="slider-score">Score: ${Math.round(score * 100)}%</div>
+      </div>`;
+  }).join('');
+}
+
+function onSliderChange(el) {
+  const key = el.dataset.key;
+  const val = parseInt(el.value) / 100;
+  userWeights[key] = val;
+  document.getElementById('sw_' + key).textContent = el.value;
+
+  recomputeAllPicks();
+  renderPicksList();
+  if (selectedIndex >= 0) {
+    selectPick(selectedIndex);
+  }
+}
+
+function resetWeights() {
+  Object.assign(userWeights, DEFAULT_WEIGHTS);
+  recomputeAllPicks();
+  renderPicksList();
+  renderSliders();
+  if (selectedIndex >= 0) selectPick(selectedIndex);
 }
 
 // ── Select a pick ──
@@ -462,21 +783,18 @@ function selectPick(index) {
   const pick = currentPicks[index];
   if (!pick) return;
 
-  // Update active card
   document.querySelectorAll('.pick-card').forEach((el, i) => {
     el.classList.toggle('active', i === index);
   });
 
-  // Update graph label
   const label = document.getElementById('graphPlayerLabel');
   if (label) label.textContent = `${pick.player_name} \u2014 Over ${pick.line} ${({'pts':'PTS','reb':'REB','ast':'AST','fg3m':'3PM','pra':'PRA'}[pick.prop_type] || pick.prop_type)}`;
 
-  // Render graph
   renderGraph(pick);
-  renderWeights(pick);
+  renderSliders();
 }
 
-// ── D3 Force Graph ──
+// ── D3 Force Graph (with extra nodes) ──
 function renderGraph(pick) {
   const container = document.getElementById('graphContainer');
   const svg = d3.select('#graphSvg');
@@ -492,78 +810,137 @@ function renderGraph(pick) {
   const graphData = pick.graph;
   if (!graphData) return;
 
-  // Deep copy nodes/edges
+  // Build combined nodes: real + extra
   const nodes = graphData.nodes.map(n => ({...n}));
-  const edges = graphData.edges.map(e => ({...e}));
 
-  // Scale node radius
+  // Update confidence node with user-computed value
+  const confNode = nodes.find(n => n.id === 'confidence');
+  if (confNode) confNode.value = pick._userConfidence ?? pick.confidence;
+
+  // Update real factor node weights from sliders
+  for (const n of nodes) {
+    if (userWeights[n.id] !== undefined) {
+      n.weight = userWeights[n.id];
+    }
+  }
+
+  // Add extra decorative nodes with pseudo-random values seeded by pick
+  const seed = pick.player_name.length + pick.line;
+  for (const en of EXTRA_NODES) {
+    const pseudoVal = ((seed * 7 + en.id.length * 13) % 80 + 20) / 100;
+    nodes.push({
+      ...en,
+      value: pseudoVal,
+      weight: 0.04 + (en.id.length % 5) * 0.02,
+    });
+  }
+
+  // Build combined edges
+  const edges = graphData.edges.map(e => ({...e}));
+  // Update real factor->confidence edge weights from sliders
+  for (const e of edges) {
+    const srcId = typeof e.source === 'string' ? e.source : e.source.id;
+    if (userWeights[srcId] !== undefined && (typeof e.target === 'string' ? e.target : e.target.id) === 'confidence') {
+      e.weight = userWeights[srcId];
+    }
+  }
+
+  for (const ee of EXTRA_EDGES) {
+    edges.push({...ee});
+  }
+
+  const nodeIds = new Set(nodes.map(n => n.id));
+  const validEdges = edges.filter(e => {
+    const s = typeof e.source === 'string' ? e.source : e.source.id;
+    const t = typeof e.target === 'string' ? e.target : e.target.id;
+    return nodeIds.has(s) && nodeIds.has(t);
+  });
+
+  // Scale node radius — large enough for labels to fit
   const radiusScale = d3.scaleSqrt()
     .domain([0, 1])
-    .range([12, 38]);
+    .range([36, 58]);
 
-  // Edge thickness scale
   const edgeScale = d3.scaleLinear()
-    .domain([0, 0.3])
-    .range([1, 6])
+    .domain([0, 0.55])
+    .range([0.8, 7])
     .clamp(true);
 
-  // Create links
+  // Links
   const linkG = svg.append('g');
   const link = linkG.selectAll('line')
-    .data(edges)
+    .data(validEdges)
     .join('line')
     .attr('class', 'edge-line')
+    .attr('stroke', 'var(--border)')
     .attr('stroke-width', d => edgeScale(d.weight))
-    .attr('stroke-opacity', d => 0.15 + d.weight * 0.6);
+    .attr('stroke-opacity', d => 0.12 + d.weight * 0.5);
 
-  // Create node groups
+  // Node groups
   const nodeG = svg.append('g');
   const node = nodeG.selectAll('g')
     .data(nodes)
     .join('g')
     .attr('cursor', 'pointer');
 
-  // Node circles
+  // Circles
   node.append('circle')
     .attr('class', 'node-circle')
-    .attr('r', d => radiusScale(d.weight))
-    .attr('fill', d => CATEGORY_COLORS[d.category] || '#ccc')
-    .attr('stroke', d => d.id === 'confidence' ? '#b35e1a' : 'white')
-    .attr('stroke-width', d => d.id === 'confidence' ? 3 : 2)
-    .attr('opacity', d => d.id === 'confidence' ? 1 : 0.3 + 0.7 * d.value);
+    .attr('r', d => d.id === 'confidence' ? 64 : radiusScale(d.weight))
+    .attr('fill', d => CATEGORY_COLORS[d.category] || '#bbb')
+    .attr('stroke', d => d.id === 'confidence' ? '#b35e1a' : 'rgba(255,255,255,0.6)')
+    .attr('stroke-width', d => d.id === 'confidence' ? 3.5 : 2)
+    .attr('opacity', d => d.id === 'confidence' ? 1 : 0.35 + 0.65 * d.value);
 
-  // Labels inside nodes
+  // Labels — always inside, white text
   node.append('text')
     .attr('class', 'node-label')
-    .attr('dy', d => radiusScale(d.weight) > 18 ? '0.1em' : '-1.2em')
+    .attr('dy', d => d.id === 'confidence' ? '-0.1em' : '-0.15em')
     .text(d => {
       if (d.id === 'confidence') return Math.round(d.value * 100) + '%';
-      return d.label.length > 10 ? d.label.slice(0, 9) + '...' : d.label;
+      return d.label;
     })
-    .style('font-size', d => d.id === 'confidence' ? '13px' : '10px')
-    .style('fill', d => {
-      if (d.id === 'confidence') return 'white';
-      return radiusScale(d.weight) > 18 ? 'white' : 'var(--text)';
+    .style('font-size', d => {
+      if (d.id === 'confidence') return '20px';
+      const r = radiusScale(d.weight);
+      // Scale font so text fits: shorter labels get bigger font
+      const maxChars = d.label.length;
+      const fitSize = (r * 1.6) / Math.max(maxChars, 4);
+      return Math.max(9, Math.min(13, fitSize * 4.5)) + 'px';
     })
-    .style('font-weight', d => d.id === 'confidence' ? '700' : '500');
+    .style('font-weight', d => d.id === 'confidence' ? '700' : '600');
 
-  // Value below label for non-center nodes
+  // Score value below label
   node.filter(d => d.id !== 'confidence')
     .append('text')
     .attr('class', 'node-value')
-    .attr('dy', d => radiusScale(d.weight) > 18 ? '1.3em' : '0em')
+    .attr('dy', '1em')
     .text(d => Math.round(d.value * 100) + '%')
-    .style('fill', d => radiusScale(d.weight) > 18 ? 'rgba(255,255,255,0.8)' : 'var(--text-mid)');
+    .style('font-size', d => Math.max(9, radiusScale(d.weight) * 0.3) + 'px');
 
-  // Force simulation
+  // "Confidence" subtitle
+  node.filter(d => d.id === 'confidence')
+    .append('text')
+    .attr('class', 'node-value')
+    .attr('dy', '1.3em')
+    .text('Confidence')
+    .style('font-size', '10px');
+
+  // Force simulation — scale spread to fill available space
+  const area = width * height;
+  const scaleFactor = Math.sqrt(area / (800 * 600));  // normalize to reference size
+  const baseDist = 160 * scaleFactor;
+
   simulation = d3.forceSimulation(nodes)
-    .force('link', d3.forceLink(edges).id(d => d.id).distance(d => {
-      if (d.source.id === 'confidence' || d.target.id === 'confidence') return 120;
-      return 90;
-    }).strength(d => 0.3 + d.weight * 0.5))
-    .force('charge', d3.forceManyBody().strength(-200))
+    .force('link', d3.forceLink(validEdges).id(d => d.id).distance(d => {
+      const s = d.source.id || d.source;
+      const t = d.target.id || d.target;
+      if (s === 'confidence' || t === 'confidence') return baseDist * 1.4;
+      return baseDist * (0.7 + (1 - d.weight) * 0.5);
+    }).strength(d => 0.12 + d.weight * 0.2))
+    .force('charge', d3.forceManyBody().strength(-600 * scaleFactor))
     .force('center', d3.forceCenter(width / 2, height / 2))
-    .force('collision', d3.forceCollide().radius(d => radiusScale(d.weight) + 8))
+    .force('collision', d3.forceCollide().radius(d => (d.id === 'confidence' ? 70 : radiusScale(d.weight)) + 16))
     .on('tick', () => {
       link
         .attr('x1', d => d.source.x)
@@ -572,13 +949,13 @@ function renderGraph(pick) {
         .attr('y2', d => d.target.y);
 
       node.attr('transform', d => {
-        d.x = Math.max(40, Math.min(width - 40, d.x));
-        d.y = Math.max(40, Math.min(height - 40, d.y));
+        d.x = Math.max(70, Math.min(width - 70, d.x));
+        d.y = Math.max(70, Math.min(height - 70, d.y));
         return `translate(${d.x},${d.y})`;
       });
     });
 
-  // Drag behavior
+  // Drag
   const drag = d3.drag()
     .on('start', (event, d) => {
       if (!event.active) simulation.alphaTarget(0.3).restart();
@@ -595,65 +972,245 @@ function renderGraph(pick) {
   // Hover tooltips
   node.on('mouseenter', (event, d) => {
     const rect = container.getBoundingClientRect();
+    const wPct = d.weight !== undefined ? Math.round(d.weight * 100) + '%' : 'N/A';
     tooltip.innerHTML = `
       <div class="tooltip-label">${escapeHtml(d.label)}</div>
       <div class="tooltip-score">Score: ${Math.round(d.value * 100)}%</div>
-      <div>Weight: ${Math.round(d.weight * 100)}%</div>
+      <div>Weight: ${wPct}</div>
       <div class="tooltip-detail">${escapeHtml(d.detail)}</div>
     `;
     tooltip.classList.add('visible');
-
-    const tx = event.clientX - rect.left + 12;
-    const ty = event.clientY - rect.top - 10;
-    tooltip.style.left = tx + 'px';
-    tooltip.style.top = ty + 'px';
+    tooltip.style.left = (event.clientX - rect.left + 14) + 'px';
+    tooltip.style.top = (event.clientY - rect.top - 12) + 'px';
 
     // Highlight connected edges
-    link.attr('stroke', l =>
-      (l.source.id === d.id || l.target.id === d.id) ? CATEGORY_COLORS[d.category] || '#D4782F' : 'var(--border)'
-    ).attr('stroke-opacity', l =>
-      (l.source.id === d.id || l.target.id === d.id) ? 0.7 : 0.15 + l.weight * 0.3
+    link.attr('stroke', l => {
+      const ls = l.source.id, lt = l.target.id;
+      if (ls === d.id || lt === d.id) return CATEGORY_COLORS[d.category] || '#D4782F';
+      return 'var(--border)';
+    }).attr('stroke-opacity', l => {
+      const ls = l.source.id, lt = l.target.id;
+      return (ls === d.id || lt === d.id) ? 0.75 : 0.08;
+    });
+
+    // Dim unconnected nodes
+    const connectedIds = new Set();
+    connectedIds.add(d.id);
+    validEdges.forEach(e => {
+      const s = e.source.id || e.source, t = e.target.id || e.target;
+      if (s === d.id) connectedIds.add(t);
+      if (t === d.id) connectedIds.add(s);
+    });
+    node.select('circle').attr('opacity', n =>
+      connectedIds.has(n.id) ? (n.id === 'confidence' ? 1 : 0.35 + 0.65 * n.value) : 0.12
     );
   })
   .on('mousemove', (event) => {
     const rect = container.getBoundingClientRect();
-    tooltip.style.left = (event.clientX - rect.left + 12) + 'px';
-    tooltip.style.top = (event.clientY - rect.top - 10) + 'px';
+    tooltip.style.left = (event.clientX - rect.left + 14) + 'px';
+    tooltip.style.top = (event.clientY - rect.top - 12) + 'px';
   })
   .on('mouseleave', () => {
     tooltip.classList.remove('visible');
     link.attr('stroke', 'var(--border)')
-      .attr('stroke-opacity', d => 0.15 + d.weight * 0.6);
+      .attr('stroke-opacity', d => 0.12 + d.weight * 0.5);
+    node.select('circle').attr('opacity', d =>
+      d.id === 'confidence' ? 1 : 0.35 + 0.65 * d.value
+    );
   });
 }
 
-// ── Weights table ──
-function renderWeights(pick) {
-  const grid = document.getElementById('weightsGrid');
-  if (!grid || !pick.factors) return;
+// ── Bet Slip logic ──
+function toggleSlip(index) {
+  const idx = betSlip.indexOf(index);
+  if (idx >= 0) betSlip.splice(idx, 1);
+  else betSlip.push(index);
+  renderPicksList();
+  renderBetSlip();
+}
 
-  const FACTOR_ORDER = ['hit_rate_l10','hit_rate_l20','trend','consistency','matchup','home_away','opp_defense','b2b'];
-  const LABELS = {
-    hit_rate_l10:'Hit Rate L10', hit_rate_l20:'Hit Rate L20', trend:'Trend',
-    consistency:'Consistency', matchup:'Matchup', home_away:'Home/Away',
-    opp_defense:'Opp Defense', b2b:'Rest',
-  };
-  const CATS = {
-    hit_rate_l10:'historical', hit_rate_l20:'historical', trend:'trend',
-    consistency:'trend', matchup:'matchup', home_away:'situational',
-    opp_defense:'matchup', b2b:'situational',
-  };
+function removeFromSlip(index) {
+  betSlip = betSlip.filter(i => i !== index);
+  renderPicksList();
+  renderBetSlip();
+}
 
-  grid.innerHTML = FACTOR_ORDER.map(key => {
-    const f = pick.factors[key] || {};
-    const color = CATEGORY_COLORS[CATS[key]] || '#ccc';
-    return `
-      <div class="weight-item">
-        <span class="weight-dot" style="background:${color}"></span>
-        <span class="weight-name">${LABELS[key]}</span>
-        <span class="weight-val">${Math.round((f.score || 0) * 100)}%</span>
+function clearSlip() {
+  betSlip = [];
+  renderPicksList();
+  renderBetSlip();
+}
+
+function getParlayConfidence() {
+  if (betSlip.length === 0) return 0;
+  let combined = 1;
+  for (const i of betSlip) {
+    const p = currentPicks[i];
+    combined *= (p._userConfidence ?? p.confidence);
+  }
+  return combined;
+}
+
+function confidenceToAmericanOdds(prob) {
+  if (prob <= 0) return '+9999';
+  if (prob >= 1) return '-9999';
+  if (prob > 0.5) return '-' + Math.round((prob / (1 - prob)) * 100);
+  return '+' + Math.round(((1 - prob) / prob) * 100);
+}
+
+function confidenceToDecimalOdds(prob) {
+  return prob > 0 ? 1 / prob : 999;
+}
+
+function calcWager(bankroll, prob) {
+  if (bankroll <= 0 || prob <= 0) return 0;
+  // Confidence-weighted percentage: scale from 1% (50% conf) to 5% (90%+ conf)
+  // Below 50% confidence, use flat 1%
+  const pct = prob >= 0.9 ? 0.05
+    : prob >= 0.5 ? 0.01 + (prob - 0.5) * (0.04 / 0.4)
+    : 0.01;
+  return Math.round(bankroll * pct * 100) / 100;
+}
+
+function onBankrollChange(val) {
+  bankroll = parseFloat(val) || 0;
+  updateBetSlipCalc();
+}
+
+// Update just the calculation results without replacing the whole panel
+function updateBetSlipCalc() {
+  const resultsEl = document.getElementById('bankrollResults');
+  if (!resultsEl || betSlip.length === 0) return;
+
+  const isSingle = betSlip.length === 1;
+  const singlePick = isSingle ? currentPicks[betSlip[0]] : null;
+  const singleConf = singlePick ? (singlePick._userConfidence ?? singlePick.confidence) : 0;
+  const parlayConf = getParlayConfidence();
+
+  const displayConf = isSingle ? singleConf : parlayConf;
+  const displayDec = confidenceToDecimalOdds(displayConf);
+  const displayWager = calcWager(bankroll, displayConf);
+  const displayToWin = Math.round(displayWager * (displayDec - 1) * 100) / 100;
+
+  resultsEl.innerHTML = `
+    <div class="bankroll-result-row">
+      <span class="bankroll-result-label">Suggested Wager</span>
+      <span class="bankroll-result-value">$${displayWager.toFixed(2)}</span>
+    </div>
+    <div class="bankroll-result-row">
+      <span class="bankroll-result-label">To Win</span>
+      <span class="bankroll-result-value">$${displayToWin.toFixed(2)}</span>
+    </div>
+    <div class="bankroll-result-row">
+      <span class="bankroll-result-label">Total Payout</span>
+      <span class="bankroll-result-value">$${(displayWager + displayToWin).toFixed(2)}</span>
+    </div>`;
+}
+
+function checkCorrelationWarning() {
+  // Warn if multiple picks from same team
+  const teams = betSlip.map(i => currentPicks[i]?.team).filter(Boolean);
+  const seen = new Set();
+  for (const t of teams) {
+    if (seen.has(t)) return `Multiple picks from ${t} — correlated outcomes may reduce true probability.`;
+    seen.add(t);
+  }
+  return null;
+}
+
+function renderBetSlip() {
+  const panel = document.getElementById('betslipPanel');
+  if (!panel) return;
+
+  if (betSlip.length === 0) {
+    panel.innerHTML = `
+      <div class="betslip-header">
+        <div class="betslip-title-row">
+          <span class="betslip-title">Bet Slip</span>
+          <span class="betslip-badge">0</span>
+        </div>
+      </div>
+      <div class="betslip-empty">
+        Click the <strong>+</strong> button on any pick to add it to your bet slip and build a parlay.
       </div>`;
-  }).join('');
+    return;
+  }
+
+  const parlayConf = getParlayConfidence();
+  const warning = checkCorrelationWarning();
+
+  // Single bet mode
+  const isSingle = betSlip.length === 1;
+  const singlePick = isSingle ? currentPicks[betSlip[0]] : null;
+  const singleConf = singlePick ? (singlePick._userConfidence ?? singlePick.confidence) : 0;
+
+  const displayConf = isSingle ? singleConf : parlayConf;
+  const displayOdds = confidenceToAmericanOdds(displayConf);
+  const displayDec = confidenceToDecimalOdds(displayConf);
+  const displayWager = calcWager(bankroll, displayConf);
+  const displayToWin = Math.round(displayWager * (displayDec - 1) * 100) / 100;
+
+  panel.innerHTML = `
+    <div class="betslip-header">
+      <div class="betslip-title-row">
+        <span class="betslip-title">Bet Slip</span>
+        <span class="betslip-badge">${betSlip.length}</span>
+      </div>
+      <button class="betslip-clear" onclick="clearSlip()">Clear All</button>
+    </div>
+    <div class="slip-items">
+      ${betSlip.map(i => {
+        const p = currentPicks[i];
+        const conf = Math.round((p._userConfidence ?? p.confidence) * 100);
+        const propLabel = ({'pts':'PTS','reb':'REB','ast':'AST','fg3m':'3PM','pra':'PRA'}[p.prop_type] || p.prop_type);
+        return `
+          <div class="slip-card">
+            <div class="slip-info">
+              <div class="slip-player">${escapeHtml(p.player_name)}</div>
+              <span class="slip-prop">Over ${p.line} ${propLabel}</span>
+              <div class="slip-conf">${conf}% confidence</div>
+            </div>
+            <button class="slip-remove" onclick="removeFromSlip(${i})" title="Remove">✕</button>
+          </div>`;
+      }).join('')}
+    </div>
+    <div class="parlay-summary">
+      <div class="parlay-row">
+        <span class="parlay-label">${isSingle ? 'Type' : 'Legs'}</span>
+        <span class="parlay-value">${isSingle ? 'Straight' : betSlip.length + '-Leg Parlay'}</span>
+      </div>
+      <div class="parlay-row">
+        <span class="parlay-label">${isSingle ? 'Confidence' : 'Combined Confidence'}</span>
+        <span class="parlay-value">${(displayConf * 100).toFixed(1)}%</span>
+      </div>
+      <div class="parlay-row">
+        <span class="parlay-label">Implied Odds</span>
+        <span class="parlay-value highlight">${displayOdds}</span>
+      </div>
+      ${warning ? `<div class="parlay-warning">⚠ ${warning}</div>` : ''}
+    </div>
+    <div class="bankroll-section">
+      <div class="bankroll-title">Bet Size Calculator</div>
+      <div class="bankroll-input-row">
+        <label>Bankroll</label>
+        <input type="number" class="bankroll-input" id="bankrollInput" value="${bankroll}" min="0" step="100"
+          oninput="onBankrollChange(this.value)" placeholder="Enter bankroll...">
+      </div>
+      <div class="bankroll-results" id="bankrollResults">
+        <div class="bankroll-result-row">
+          <span class="bankroll-result-label">Suggested Wager</span>
+          <span class="bankroll-result-value">$${displayWager.toFixed(2)}</span>
+        </div>
+        <div class="bankroll-result-row">
+          <span class="bankroll-result-label">To Win</span>
+          <span class="bankroll-result-value">$${displayToWin.toFixed(2)}</span>
+        </div>
+        <div class="bankroll-result-row">
+          <span class="bankroll-result-label">Total Payout</span>
+          <span class="bankroll-result-value">$${(displayWager + displayToWin).toFixed(2)}</span>
+        </div>
+      </div>
+    </div>`;
 }
 
 // ── Resize handler ──
