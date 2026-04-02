@@ -8,10 +8,11 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.db import close_pool, create_pool
-from app.routers import ask, game_preview, health, headlines, scores
+from app.db import close_pool, create_pool, get_pool
+from app.routers import ask, betting, game_preview, health, headlines, scores
 
 FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
+MIGRATIONS_DIR = Path(__file__).resolve().parent.parent / "migrations"
 
 scheduler = AsyncIOScheduler()
 
@@ -21,9 +22,18 @@ def run_sync_news():
     subprocess.Popen([sys.executable, "sync_news.py"])
 
 
+async def run_migrations():
+    """Run all SQL migration files on startup."""
+    pool = await get_pool()
+    for sql_file in sorted(MIGRATIONS_DIR.glob("*.sql")):
+        sql = sql_file.read_text()
+        await pool.execute(sql)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await create_pool()
+    await run_migrations()
     scheduler.add_job(run_sync_news, "interval", minutes=15, id="sync_news")
     scheduler.start()
     yield
@@ -38,6 +48,7 @@ app.include_router(ask.router)
 app.include_router(headlines.router)
 app.include_router(scores.router)
 app.include_router(game_preview.router)
+app.include_router(betting.router)
 
 
 @app.get("/")

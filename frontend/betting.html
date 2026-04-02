@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Betting Picks | Ball Don't Lie</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+<style>
+:root{
+  --orange:#D4782F;
+  --orange-light:#F0C9A0;
+  --orange-pale:#FDF0E2;
+  --cream:#FBF8F4;
+  --cream-dark:#F3EDE5;
+  --text:#2D2D2D;
+  --text-mid:#6B6B6B;
+  --text-light:#A0A0A0;
+  --border:#E3D6C8;
+  --green:#8FB996;
+  --green-light:#d4edda;
+  --blue:#5B8DB8;
+}
+
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+  font-family:'DM Sans',sans-serif;
+  background:var(--cream);
+  color:var(--text);
+  min-height:100vh;
+}
+
+/* ── Header ── */
+.header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:16px 32px;
+  border-bottom:1px solid var(--border);
+  background:white;
+}
+.header-left{display:flex;align-items:center;gap:12px;}
+.header-logo{width:36px;height:36px;}
+.header-title{font-family:'Gaegu',cursive;font-size:1.4rem;font-weight:700;color:var(--text);}
+.header-subtitle{font-size:0.85rem;color:var(--text-mid);font-weight:500;}
+.back-link{
+  font-size:0.85rem;
+  color:var(--orange);
+  text-decoration:none;
+  padding:6px 14px;
+  border:1px solid var(--orange-light);
+  border-radius:18px;
+  transition:background 0.2s;
+}
+.back-link:hover{background:var(--orange-pale);}
+
+/* ── Main layout ── */
+.content{
+  display:grid;
+  grid-template-columns:380px 1fr;
+  gap:0;
+  height:calc(100vh - 65px);
+}
+
+/* ── Picks panel ── */
+.picks-panel{
+  border-right:1px solid var(--border);
+  overflow-y:auto;
+  background:white;
+  padding:20px;
+}
+.picks-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:16px;
+}
+.picks-title{font-size:1.1rem;font-weight:700;}
+.picks-count{font-size:0.78rem;color:var(--text-light);background:var(--cream-dark);padding:2px 10px;border-radius:12px;}
+
+.pick-card{
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:14px 16px;
+  margin-bottom:10px;
+  cursor:pointer;
+  transition:all 0.2s;
+  background:white;
+  border-left:3px solid transparent;
+}
+.pick-card:hover{background:var(--cream);border-color:var(--orange-light);border-left-color:var(--orange-light);}
+.pick-card.active{
+  background:var(--orange-pale);
+  border-color:var(--orange);
+  border-left-color:var(--orange);
+  box-shadow:0 2px 8px rgba(212,120,47,0.1);
+}
+
+.pick-top{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.pick-team-logo{width:28px;height:28px;border-radius:50%;object-fit:contain;}
+.pick-player{font-weight:600;font-size:0.95rem;flex:1;}
+.pick-matchup{font-size:0.78rem;color:var(--text-mid);}
+
+.pick-middle{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.prop-pill{
+  display:inline-block;
+  background:var(--orange-pale);
+  color:var(--orange);
+  padding:3px 10px;
+  border-radius:12px;
+  font-size:0.78rem;
+  font-weight:600;
+}
+.b2b-badge{
+  display:inline-block;
+  background:#fff3cd;
+  color:#856404;
+  padding:2px 8px;
+  border-radius:10px;
+  font-size:0.7rem;
+  font-weight:500;
+}
+
+.confidence-bar{flex:1;display:flex;align-items:center;gap:8px;}
+.confidence-track{
+  flex:1;
+  height:6px;
+  background:var(--cream-dark);
+  border-radius:3px;
+  overflow:hidden;
+}
+.confidence-fill{
+  height:100%;
+  border-radius:3px;
+  background:linear-gradient(90deg, var(--orange-light), var(--orange));
+  transition:width 0.4s ease;
+}
+.confidence-pct{font-size:0.78rem;font-weight:600;color:var(--orange);min-width:36px;text-align:right;}
+
+.pick-reasoning{font-size:0.8rem;color:var(--text-mid);line-height:1.45;margin-top:4px;}
+
+/* ── Graph panel ── */
+.graph-panel{
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  background:var(--cream);
+}
+.graph-header{
+  padding:20px 24px 12px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+.graph-title{font-size:1.1rem;font-weight:700;}
+.graph-player-label{font-size:0.85rem;color:var(--text-mid);font-weight:500;}
+
+.graph-container{
+  flex:1;
+  position:relative;
+  min-height:0;
+}
+#graphSvg{
+  width:100%;
+  height:100%;
+  display:block;
+}
+
+/* D3 graph styles */
+.node-circle{cursor:pointer;transition:opacity 0.2s;}
+.node-circle:hover{opacity:1 !important;}
+.node-label{
+  font-family:'DM Sans',sans-serif;
+  font-size:11px;
+  fill:var(--text);
+  text-anchor:middle;
+  pointer-events:none;
+  font-weight:500;
+}
+.node-value{
+  font-family:'DM Sans',sans-serif;
+  font-size:9px;
+  fill:var(--text-mid);
+  text-anchor:middle;
+  pointer-events:none;
+}
+.edge-line{stroke:var(--border);fill:none;}
+
+/* Tooltip */
+.graph-tooltip{
+  position:absolute;
+  background:white;
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:10px 14px;
+  font-size:0.8rem;
+  box-shadow:0 4px 16px rgba(0,0,0,0.08);
+  pointer-events:none;
+  opacity:0;
+  transition:opacity 0.15s;
+  max-width:240px;
+  z-index:100;
+}
+.graph-tooltip.visible{opacity:1;}
+.tooltip-label{font-weight:600;margin-bottom:4px;}
+.tooltip-score{color:var(--orange);font-weight:600;}
+.tooltip-detail{color:var(--text-mid);font-size:0.75rem;margin-top:4px;line-height:1.4;}
+
+/* ── Factor weights table ── */
+.weights-panel{
+  padding:12px 24px 16px;
+  border-top:1px solid var(--border);
+  background:white;
+}
+.weights-title{font-size:0.82rem;font-weight:600;margin-bottom:8px;color:var(--text-mid);}
+.weights-grid{
+  display:grid;
+  grid-template-columns:repeat(4, 1fr);
+  gap:6px;
+}
+.weight-item{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  font-size:0.75rem;
+}
+.weight-dot{
+  width:8px;height:8px;
+  border-radius:50%;
+  flex-shrink:0;
+}
+.weight-name{color:var(--text-mid);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.weight-val{font-weight:600;color:var(--text);}
+
+/* ── Loading ── */
+.loading-container{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  height:100%;
+  gap:16px;
+}
+.loading-text{font-size:0.9rem;color:var(--text-mid);}
+
+/* Basketball bounce animation */
+@keyframes ballBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-18px)}}
+@keyframes shadowPulse{0%,100%{transform:scaleX(1);opacity:0.3}50%{transform:scaleX(0.6);opacity:0.15}}
+.ball-bounce{animation:ballBounce 0.6s ease-in-out infinite;}
+.ball-shadow{
+  width:24px;height:4px;
+  background:var(--text-light);
+  border-radius:50%;
+  margin-top:4px;
+  animation:shadowPulse 0.6s ease-in-out infinite;
+}
+
+/* ── Empty state ── */
+.empty-state{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  height:100%;
+  text-align:center;
+  padding:40px;
+  color:var(--text-mid);
+}
+.empty-state h3{font-size:1.1rem;margin-bottom:8px;color:var(--text);}
+.empty-state p{font-size:0.85rem;max-width:300px;}
+
+/* ── Graph placeholder ── */
+.graph-placeholder{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  height:100%;
+  color:var(--text-light);
+  font-size:0.9rem;
+}
+
+/* ── Responsive ── */
+@media(max-width:900px){
+  .content{
+    grid-template-columns:1fr;
+    grid-template-rows:auto 1fr;
+    height:auto;
+  }
+  .picks-panel{
+    border-right:none;
+    border-bottom:1px solid var(--border);
+    max-height:45vh;
+  }
+  .graph-panel{min-height:50vh;}
+  .header{padding:12px 16px;}
+  .weights-grid{grid-template-columns:repeat(2, 1fr);}
+}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="header">
+  <div class="header-left">
+    <svg class="header-logo" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="60" cy="60" r="54" fill="#D4782F"/>
+      <path d="M14 40 Q60 20 106 40" stroke="#1a1a1a" stroke-width="2.5" fill="none"/>
+      <path d="M14 80 Q60 100 106 80" stroke="#1a1a1a" stroke-width="2.5" fill="none"/>
+      <line x1="60" y1="6" x2="60" y2="114" stroke="#1a1a1a" stroke-width="2.5"/>
+      <circle cx="60" cy="60" r="54" stroke="#1a1a1a" stroke-width="3" fill="none"/>
+    </svg>
+    <div>
+      <div class="header-title">Ball Don't Lie</div>
+      <div class="header-subtitle">Betting Picks</div>
+    </div>
+  </div>
+  <a href="/" class="back-link">Back to Chat</a>
+</header>
+
+<!-- Content -->
+<div class="content" id="content">
+  <!-- Loading state -->
+  <div class="loading-container" id="loadingState" style="grid-column:1/-1;">
+    <svg class="ball-bounce" width="36" height="36" viewBox="0 0 120 120" fill="none">
+      <circle cx="60" cy="60" r="54" fill="#D4782F"/>
+      <path d="M14 40 Q60 20 106 40" stroke="#1a1a1a" stroke-width="2.5" fill="none"/>
+      <path d="M14 80 Q60 100 106 80" stroke="#1a1a1a" stroke-width="2.5" fill="none"/>
+      <line x1="60" y1="6" x2="60" y2="114" stroke="#1a1a1a" stroke-width="2.5"/>
+      <circle cx="60" cy="60" r="54" stroke="#1a1a1a" stroke-width="3" fill="none"/>
+    </svg>
+    <div class="ball-shadow"></div>
+    <div class="loading-text">Loading picks...</div>
+  </div>
+</div>
+
+<!-- Tooltip -->
+<div class="graph-tooltip" id="tooltip"></div>
+
+<script>
+const CATEGORY_COLORS = {
+  center: '#D4782F',
+  historical: '#D4782F',
+  trend: '#E8A87C',
+  matchup: '#8FB996',
+  situational: '#A0A0A0',
+};
+
+const content = document.getElementById('content');
+const tooltip = document.getElementById('tooltip');
+let currentPicks = [];
+let selectedIndex = -1;
+let simulation = null;
+
+// ── Team logo helper ──
+function teamLogo(abbr) {
+  // Map abbreviation to team ID for CDN
+  const MAP = {
+    ATL:1610612737,BOS:1610612738,BKN:1610612751,CHA:1610612766,
+    CHI:1610612741,CLE:1610612739,DAL:1610612742,DEN:1610612743,
+    DET:1610612765,GSW:1610612744,HOU:1610612745,IND:1610612754,
+    LAC:1610612746,LAL:1610612747,MEM:1610612763,MIA:1610612748,
+    MIL:1610612749,MIN:1610612750,NOP:1610612740,NYK:1610612752,
+    OKC:1610612760,ORL:1610612753,PHI:1610612755,PHX:1610612756,
+    POR:1610612757,SAC:1610612758,SAS:1610612759,TOR:1610612761,
+    UTA:1610612762,WAS:1610612764,
+  };
+  const id = MAP[abbr];
+  return id ? `https://cdn.nba.com/logos/nba/${id}/primary/L/logo.svg` : '';
+}
+
+function escapeHtml(str) {
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+// ── Fetch picks ──
+async function loadPicks() {
+  try {
+    const res = await fetch('/betting/picks');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    currentPicks = data.picks || [];
+    renderApp(data);
+  } catch (err) {
+    console.error('Failed to load picks:', err);
+    content.innerHTML = `
+      <div class="empty-state" style="grid-column:1/-1;">
+        <h3>Something went wrong</h3>
+        <p>Could not load betting picks. Make sure the server is running.</p>
+        <button onclick="location.reload()" style="margin-top:16px;padding:8px 20px;border:1px solid var(--border);border-radius:18px;background:white;cursor:pointer;font-family:'DM Sans',sans-serif;">Retry</button>
+      </div>`;
+  }
+}
+
+// ── Render full app ──
+function renderApp(data) {
+  if (!currentPicks.length) {
+    content.innerHTML = `
+      <div class="empty-state" style="grid-column:1/-1;">
+        <h3>No picks available</h3>
+        <p>No games scheduled or no strong prop recommendations right now. Check back on game day!</p>
+      </div>`;
+    return;
+  }
+
+  content.innerHTML = `
+    <div class="picks-panel" id="picksPanel">
+      <div class="picks-header">
+        <span class="picks-title">Today's Picks</span>
+        <span class="picks-count">${currentPicks.length} picks</span>
+      </div>
+      <div id="picksList"></div>
+    </div>
+    <div class="graph-panel" id="graphPanel">
+      <div class="graph-header">
+        <span class="graph-title">Factor Analysis</span>
+        <span class="graph-player-label" id="graphPlayerLabel">Select a pick</span>
+      </div>
+      <div class="graph-container" id="graphContainer">
+        <svg id="graphSvg"></svg>
+      </div>
+      <div class="weights-panel" id="weightsPanel">
+        <div class="weights-title">Factor Weights</div>
+        <div class="weights-grid" id="weightsGrid"></div>
+      </div>
+    </div>`;
+
+  renderPicksList();
+  selectPick(0);
+}
+
+// ── Render picks list ──
+function renderPicksList() {
+  const list = document.getElementById('picksList');
+  list.innerHTML = currentPicks.map((pick, i) => `
+    <div class="pick-card ${i === selectedIndex ? 'active' : ''}" data-index="${i}" onclick="selectPick(${i})">
+      <div class="pick-top">
+        <img class="pick-team-logo" src="${teamLogo(pick.team)}" alt="${escapeHtml(pick.team || '')}" onerror="this.style.display='none'">
+        <span class="pick-player">${escapeHtml(pick.player_name)}</span>
+        <span class="pick-matchup">${pick.location === 'home' ? 'vs' : '@'} ${escapeHtml(pick.opponent || '?')}</span>
+      </div>
+      <div class="pick-middle">
+        <span class="prop-pill">Over ${pick.line} ${({'pts':'PTS','reb':'REB','ast':'AST','fg3m':'3PM','pra':'PRA'}[pick.prop_type] || pick.prop_type)}</span>
+        ${pick.is_b2b ? '<span class="b2b-badge">B2B</span>' : ''}
+        <div class="confidence-bar">
+          <div class="confidence-track">
+            <div class="confidence-fill" style="width:${Math.round(pick.confidence * 100)}%"></div>
+          </div>
+          <span class="confidence-pct">${Math.round(pick.confidence * 100)}%</span>
+        </div>
+      </div>
+      <div class="pick-reasoning">${escapeHtml(pick.reasoning)}</div>
+    </div>
+  `).join('');
+}
+
+// ── Select a pick ──
+function selectPick(index) {
+  selectedIndex = index;
+  const pick = currentPicks[index];
+  if (!pick) return;
+
+  // Update active card
+  document.querySelectorAll('.pick-card').forEach((el, i) => {
+    el.classList.toggle('active', i === index);
+  });
+
+  // Update graph label
+  const label = document.getElementById('graphPlayerLabel');
+  if (label) label.textContent = `${pick.player_name} \u2014 Over ${pick.line} ${({'pts':'PTS','reb':'REB','ast':'AST','fg3m':'3PM','pra':'PRA'}[pick.prop_type] || pick.prop_type)}`;
+
+  // Render graph
+  renderGraph(pick);
+  renderWeights(pick);
+}
+
+// ── D3 Force Graph ──
+function renderGraph(pick) {
+  const container = document.getElementById('graphContainer');
+  const svg = d3.select('#graphSvg');
+  svg.selectAll('*').remove();
+
+  if (simulation) { simulation.stop(); simulation = null; }
+
+  const width = container.clientWidth;
+  const height = container.clientHeight;
+
+  svg.attr('viewBox', `0 0 ${width} ${height}`);
+
+  const graphData = pick.graph;
+  if (!graphData) return;
+
+  // Deep copy nodes/edges
+  const nodes = graphData.nodes.map(n => ({...n}));
+  const edges = graphData.edges.map(e => ({...e}));
+
+  // Scale node radius
+  const radiusScale = d3.scaleSqrt()
+    .domain([0, 1])
+    .range([12, 38]);
+
+  // Edge thickness scale
+  const edgeScale = d3.scaleLinear()
+    .domain([0, 0.3])
+    .range([1, 6])
+    .clamp(true);
+
+  // Create links
+  const linkG = svg.append('g');
+  const link = linkG.selectAll('line')
+    .data(edges)
+    .join('line')
+    .attr('class', 'edge-line')
+    .attr('stroke-width', d => edgeScale(d.weight))
+    .attr('stroke-opacity', d => 0.15 + d.weight * 0.6);
+
+  // Create node groups
+  const nodeG = svg.append('g');
+  const node = nodeG.selectAll('g')
+    .data(nodes)
+    .join('g')
+    .attr('cursor', 'pointer');
+
+  // Node circles
+  node.append('circle')
+    .attr('class', 'node-circle')
+    .attr('r', d => radiusScale(d.weight))
+    .attr('fill', d => CATEGORY_COLORS[d.category] || '#ccc')
+    .attr('stroke', d => d.id === 'confidence' ? '#b35e1a' : 'white')
+    .attr('stroke-width', d => d.id === 'confidence' ? 3 : 2)
+    .attr('opacity', d => d.id === 'confidence' ? 1 : 0.3 + 0.7 * d.value);
+
+  // Labels inside nodes
+  node.append('text')
+    .attr('class', 'node-label')
+    .attr('dy', d => radiusScale(d.weight) > 18 ? '0.1em' : '-1.2em')
+    .text(d => {
+      if (d.id === 'confidence') return Math.round(d.value * 100) + '%';
+      return d.label.length > 10 ? d.label.slice(0, 9) + '...' : d.label;
+    })
+    .style('font-size', d => d.id === 'confidence' ? '13px' : '10px')
+    .style('fill', d => {
+      if (d.id === 'confidence') return 'white';
+      return radiusScale(d.weight) > 18 ? 'white' : 'var(--text)';
+    })
+    .style('font-weight', d => d.id === 'confidence' ? '700' : '500');
+
+  // Value below label for non-center nodes
+  node.filter(d => d.id !== 'confidence')
+    .append('text')
+    .attr('class', 'node-value')
+    .attr('dy', d => radiusScale(d.weight) > 18 ? '1.3em' : '0em')
+    .text(d => Math.round(d.value * 100) + '%')
+    .style('fill', d => radiusScale(d.weight) > 18 ? 'rgba(255,255,255,0.8)' : 'var(--text-mid)');
+
+  // Force simulation
+  simulation = d3.forceSimulation(nodes)
+    .force('link', d3.forceLink(edges).id(d => d.id).distance(d => {
+      if (d.source.id === 'confidence' || d.target.id === 'confidence') return 120;
+      return 90;
+    }).strength(d => 0.3 + d.weight * 0.5))
+    .force('charge', d3.forceManyBody().strength(-200))
+    .force('center', d3.forceCenter(width / 2, height / 2))
+    .force('collision', d3.forceCollide().radius(d => radiusScale(d.weight) + 8))
+    .on('tick', () => {
+      link
+        .attr('x1', d => d.source.x)
+        .attr('y1', d => d.source.y)
+        .attr('x2', d => d.target.x)
+        .attr('y2', d => d.target.y);
+
+      node.attr('transform', d => {
+        d.x = Math.max(40, Math.min(width - 40, d.x));
+        d.y = Math.max(40, Math.min(height - 40, d.y));
+        return `translate(${d.x},${d.y})`;
+      });
+    });
+
+  // Drag behavior
+  const drag = d3.drag()
+    .on('start', (event, d) => {
+      if (!event.active) simulation.alphaTarget(0.3).restart();
+      d.fx = d.x; d.fy = d.y;
+    })
+    .on('drag', (event, d) => { d.fx = event.x; d.fy = event.y; })
+    .on('end', (event, d) => {
+      if (!event.active) simulation.alphaTarget(0);
+      d.fx = null; d.fy = null;
+    });
+
+  node.call(drag);
+
+  // Hover tooltips
+  node.on('mouseenter', (event, d) => {
+    const rect = container.getBoundingClientRect();
+    tooltip.innerHTML = `
+      <div class="tooltip-label">${escapeHtml(d.label)}</div>
+      <div class="tooltip-score">Score: ${Math.round(d.value * 100)}%</div>
+      <div>Weight: ${Math.round(d.weight * 100)}%</div>
+      <div class="tooltip-detail">${escapeHtml(d.detail)}</div>
+    `;
+    tooltip.classList.add('visible');
+
+    const tx = event.clientX - rect.left + 12;
+    const ty = event.clientY - rect.top - 10;
+    tooltip.style.left = tx + 'px';
+    tooltip.style.top = ty + 'px';
+
+    // Highlight connected edges
+    link.attr('stroke', l =>
+      (l.source.id === d.id || l.target.id === d.id) ? CATEGORY_COLORS[d.category] || '#D4782F' : 'var(--border)'
+    ).attr('stroke-opacity', l =>
+      (l.source.id === d.id || l.target.id === d.id) ? 0.7 : 0.15 + l.weight * 0.3
+    );
+  })
+  .on('mousemove', (event) => {
+    const rect = container.getBoundingClientRect();
+    tooltip.style.left = (event.clientX - rect.left + 12) + 'px';
+    tooltip.style.top = (event.clientY - rect.top - 10) + 'px';
+  })
+  .on('mouseleave', () => {
+    tooltip.classList.remove('visible');
+    link.attr('stroke', 'var(--border)')
+      .attr('stroke-opacity', d => 0.15 + d.weight * 0.6);
+  });
+}
+
+// ── Weights table ──
+function renderWeights(pick) {
+  const grid = document.getElementById('weightsGrid');
+  if (!grid || !pick.factors) return;
+
+  const FACTOR_ORDER = ['hit_rate_l10','hit_rate_l20','trend','consistency','matchup','home_away','opp_defense','b2b'];
+  const LABELS = {
+    hit_rate_l10:'Hit Rate L10', hit_rate_l20:'Hit Rate L20', trend:'Trend',
+    consistency:'Consistency', matchup:'Matchup', home_away:'Home/Away',
+    opp_defense:'Opp Defense', b2b:'Rest',
+  };
+  const CATS = {
+    hit_rate_l10:'historical', hit_rate_l20:'historical', trend:'trend',
+    consistency:'trend', matchup:'matchup', home_away:'situational',
+    opp_defense:'matchup', b2b:'situational',
+  };
+
+  grid.innerHTML = FACTOR_ORDER.map(key => {
+    const f = pick.factors[key] || {};
+    const color = CATEGORY_COLORS[CATS[key]] || '#ccc';
+    return `
+      <div class="weight-item">
+        <span class="weight-dot" style="background:${color}"></span>
+        <span class="weight-name">${LABELS[key]}</span>
+        <span class="weight-val">${Math.round((f.score || 0) * 100)}%</span>
+      </div>`;
+  }).join('');
+}
+
+// ── Resize handler ──
+let resizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    if (selectedIndex >= 0 && currentPicks[selectedIndex]) {
+      renderGraph(currentPicks[selectedIndex]);
+    }
+  }, 200);
+});
+
+// ── Init ──
+loadPicks();
+</script>
+</body>
+</html>

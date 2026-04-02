@@ -1,10 +1,13 @@
 import asyncio
+import logging
 import re
 
 from app.db import get_pool
 from app.prompts.format_stats import FORMAT_STATS_PROMPT
 from app.prompts.text_to_sql import SCHEMA_DESCRIPTION, TEXT_TO_SQL_PROMPT
 from app.services.llm import chat_completion
+
+logger = logging.getLogger(__name__)
 
 # Disallowed SQL patterns (case-insensitive)
 _UNSAFE_PATTERN = re.compile(
@@ -27,6 +30,13 @@ async def answer_stats_question(question: str, news_context: str | None = None) 
     sql = sql.strip().strip("`").strip()
     if sql.startswith("sql"):
         sql = sql[3:].strip()
+    # LLM sometimes generates multiple statements — only keep the last complete one
+    # (often the first is a simple lookup, the second is the real query with CTEs)
+    statements = [s.strip() for s in sql.split(";") if s.strip()]
+    if len(statements) > 1:
+        logger.warning("LLM generated %d SQL statements, using the last one", len(statements))
+        sql = statements[-1]
+    logger.info("Generated SQL for '%s': %s", question, sql)
 
     # Step 2: Safety check
     if _UNSAFE_PATTERN.search(sql):
@@ -57,6 +67,7 @@ async def answer_stats_question(question: str, news_context: str | None = None) 
                 "results": None,
             }
         except Exception as e:
+            logger.error("SQL execution error (attempt %d): %s", attempt, e)
             last_error = e
             if attempt == 0:
                 # Ask the LLM to fix the SQL based on the error
@@ -84,6 +95,7 @@ async def answer_stats_question(question: str, news_context: str | None = None) 
                     }
 
     if last_error is not None:
+        logger.error("SQL failed after retries for '%s'. Last error: %s", question, last_error)
         if _is_player_question(question, sql):
             fallback_answer = await _llm_fallback(question)
             return {
@@ -110,6 +122,7 @@ async def answer_stats_question(question: str, news_context: str | None = None) 
 
     # Step 5: LLM fallback if results are empty and question is player-related
     if not results and _is_player_question(question, sql):
+        logger.warning("Empty results for player question '%s', falling back to LLM", question)
         answer = await _llm_fallback(question)
 
     return {

@@ -77,7 +77,7 @@ TEXT_TO_SQL_PROMPT = """You are an expert SQL query generator for an NBA statist
 Given the user's question, generate a single PostgreSQL SELECT query that answers it.
 
 Rules:
-1. Output ONLY the SQL query, no explanation, no markdown fences.
+1. Output ONLY a SINGLE SQL SELECT statement, no explanation, no markdown fences. NEVER output multiple statements separated by semicolons. NEVER use UNION ALL to combine unrelated queries with different column structures. If the question asks for multiple things, pick the most relevant single query (prefer season averages from materialized views for general "how is X doing" questions).
 2. Always use SELECT — never INSERT, UPDATE, DELETE, DROP, ALTER, or any DDL/DML.
 3. Use materialized views when they can answer the question (faster).
 4. LIMIT results to 25 rows unless the user asks for more.

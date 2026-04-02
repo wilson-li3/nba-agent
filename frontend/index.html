@@ -20,6 +20,7 @@
   --text-mid:#6B6B6B;
   --text-light:#A0A0A0;
   --border:#E3D6C8;
+  --sidebar-width:260px;
 }
 
 html,body{
@@ -30,14 +31,171 @@ html,body{
   -webkit-font-smoothing:antialiased;
 }
 
-/* ─── APP SHELL ─── */
-.app{
+/* ─── TOP-LEVEL LAYOUT ─── */
+.app-wrapper{
+  display:flex;
+  height:100vh;
+}
+
+/* ─── SIDEBAR ─── */
+.sidebar{
+  width:var(--sidebar-width);
+  min-width:var(--sidebar-width);
+  background:white;
+  border-right:1px solid var(--border);
+  display:none;
+  flex-direction:column;
+  height:100vh;
+  position:fixed;
+  left:0;top:0;
+  z-index:100;
+}
+.sidebar.visible{display:flex;}
+
+.sidebar-header{
+  padding:16px;
+  border-bottom:1px solid var(--border);
+}
+.sidebar-header .new-chat-btn{
+  width:100%;
+  padding:10px 16px;
+  background:var(--orange);
+  color:white;
+  border:none;
+  border-radius:10px;
+  font-size:0.88rem;
+  font-weight:600;
+  font-family:'DM Sans',sans-serif;
+  cursor:pointer;
+  transition:background 0.2s;
+}
+.sidebar-header .new-chat-btn:hover{background:#c06a28;}
+
+.sidebar-chats{
+  flex:1;
+  overflow-y:auto;
+  padding:8px 0;
+}
+.sidebar-chat-item{
+  padding:10px 16px;
+  font-size:0.84rem;
+  color:var(--text);
+  cursor:pointer;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  border-left:3px solid transparent;
+  transition:background 0.15s;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:6px;
+}
+.sidebar-chat-item:hover{background:var(--cream);}
+.sidebar-chat-item.active{
+  background:var(--orange-pale);
+  border-left-color:var(--orange);
+  font-weight:600;
+}
+.sidebar-chat-item .chat-title{
+  flex:1;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.sidebar-chat-item .delete-btn{
+  display:none;
+  background:none;
+  border:none;
+  color:var(--text-light);
+  cursor:pointer;
+  font-size:0.9rem;
+  padding:2px 4px;
+  border-radius:4px;
+  flex-shrink:0;
+}
+.sidebar-chat-item:hover .delete-btn{display:block;}
+.sidebar-chat-item .delete-btn:hover{color:#e74c3c;background:rgba(231,76,60,0.1);}
+
+.sidebar-footer{
+  padding:12px 16px;
+  border-top:1px solid var(--border);
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.sidebar-footer .user-avatar{
+  width:32px;height:32px;
+  border-radius:50%;
+  object-fit:cover;
+}
+.sidebar-footer .user-info{
+  flex:1;
+  min-width:0;
+}
+.sidebar-footer .user-name{
+  font-size:0.82rem;
+  font-weight:600;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.sidebar-footer .user-email{
+  font-size:0.72rem;
+  color:var(--text-light);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.sidebar-footer .logout-btn{
+  background:none;
+  border:1px solid var(--border);
+  border-radius:6px;
+  padding:4px 10px;
+  font-size:0.75rem;
+  color:var(--text-mid);
+  cursor:pointer;
+  font-family:'DM Sans',sans-serif;
+  flex-shrink:0;
+}
+.sidebar-footer .logout-btn:hover{background:var(--cream);color:var(--text);}
+
+/* ─── MAIN CONTENT ─── */
+.main-content{
+  flex:1;
   display:flex;
   flex-direction:column;
   height:100vh;
   max-width:860px;
   margin:0 auto;
   position:relative;
+  width:100%;
+}
+.main-content.with-sidebar{
+  margin-left:var(--sidebar-width);
+}
+
+
+/* ─── MOBILE HAMBURGER ─── */
+.hamburger-btn{
+  display:none;
+  position:absolute;
+  top:12px;
+  left:12px;
+  z-index:50;
+  background:white;
+  border:1px solid var(--border);
+  border-radius:8px;
+  padding:6px 8px;
+  cursor:pointer;
+  font-size:1.2rem;
+  line-height:1;
+}
+.sidebar-overlay{
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.3);
+  z-index:99;
 }
 
 /* ─── HEADLINES ─── */
@@ -71,6 +229,19 @@ html,body{
   color:var(--text-light);
 }
 .scores-bar .placeholder{font-style:italic;}
+.betting-link{
+  margin-left:auto;
+  padding:4px 14px;
+  background:var(--orange-pale);
+  color:var(--orange);
+  border-radius:14px;
+  font-size:0.78rem;
+  font-weight:600;
+  text-decoration:none;
+  white-space:nowrap;
+  transition:background 0.2s;
+}
+.betting-link:hover{background:var(--orange-light);color:white;}
 .scores-bar .view-all{
   margin-left:auto;
   font-family:'Gaegu',cursive;
@@ -463,117 +634,126 @@ html,body{
 }
 
 @media(max-width:640px){
-  .app{max-width:100%;}
+  .main-content{max-width:100%;}
+  .main-content.with-sidebar{margin-left:0;}
   .message{max-width:90%;}
   .brand-text{font-size:1.5rem;}
   .headlines-bar,.scores-bar,.messages,.input-area{padding-left:16px;padding-right:16px;}
   .chat-header{padding-left:16px;padding-right:16px;}
+  .hamburger-btn{display:block;}
+  .sidebar{position:fixed;left:0;top:0;z-index:100;}
+  .sidebar-overlay.visible{display:block;}
 }
 </style>
 </head>
 <body>
-<div class="app">
+<div class="app-wrapper">
 
-  <!-- Headlines -->
-  <div class="headlines-bar">
-    <span class="headlines-label">Headlines</span>
-    <span class="headlines-items" id="headlinesItems">No headlines yet — connect a news source to see live updates.</span>
-  </div>
+  <!-- Main content -->
+  <div class="main-content" id="mainContent">
 
-  <!-- Scores ticker -->
-  <div class="scores-bar">
-    <span id="scoresContent">Live scores coming soon</span>
-  </div>
-
-  <!-- LANDING PAGE (centered branding + input) -->
-  <div class="landing" id="landing">
-    <div class="logo">
-      <svg class="logo-icon" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <!-- Backboard -->
-        <rect x="36" y="6" width="48" height="5" rx="2" fill="#3A3A3A"/>
-        <!-- Backboard support -->
-        <rect x="58" y="11" width="4" height="14" rx="1" fill="#3A3A3A"/>
-        <!-- Rim -->
-        <ellipse cx="60" cy="28" rx="18" ry="5" stroke="#D4782F" stroke-width="2.5" fill="none"/>
-        <!-- Net -->
-        <path d="M42 30 C45 40,48 46,51 52" stroke="#C8B8A4" stroke-width="1.2" fill="none" stroke-linecap="round"/>
-        <path d="M48 31 C50 40,52 46,54 52" stroke="#C8B8A4" stroke-width="1.2" fill="none" stroke-linecap="round"/>
-        <path d="M54 32 C56 40,57 46,57 52" stroke="#C8B8A4" stroke-width="1.2" fill="none" stroke-linecap="round"/>
-        <path d="M60 33 C60 40,60 46,60 52" stroke="#C8B8A4" stroke-width="1.2" fill="none" stroke-linecap="round"/>
-        <path d="M66 32 C64 40,63 46,63 52" stroke="#C8B8A4" stroke-width="1.2" fill="none" stroke-linecap="round"/>
-        <path d="M72 31 C70 40,68 46,66 52" stroke="#C8B8A4" stroke-width="1.2" fill="none" stroke-linecap="round"/>
-        <path d="M78 30 C75 40,72 46,69 52" stroke="#C8B8A4" stroke-width="1.2" fill="none" stroke-linecap="round"/>
-        <!-- Cross net threads -->
-        <path d="M44 36 Q60 40,76 36" stroke="#C8B8A4" stroke-width="0.8" fill="none"/>
-        <path d="M48 44 Q60 48,72 44" stroke="#C8B8A4" stroke-width="0.8" fill="none"/>
-        <!-- Basketball -->
-        <circle cx="60" cy="82" r="24" fill="#D4782F"/>
-        <circle cx="60" cy="82" r="24" stroke="#2D2D2D" stroke-width="1.8" fill="none"/>
-        <!-- Horizontal seam -->
-        <line x1="36" y1="82" x2="84" y2="82" stroke="#2D2D2D" stroke-width="1.4"/>
-        <!-- Vertical seam -->
-        <line x1="60" y1="58" x2="60" y2="106" stroke="#2D2D2D" stroke-width="1.4"/>
-        <!-- Left curved seam -->
-        <path d="M60 58 C44 68, 44 96, 60 106" stroke="#2D2D2D" stroke-width="1.4" fill="none"/>
-        <!-- Right curved seam -->
-        <path d="M60 58 C76 68, 76 96, 60 106" stroke="#2D2D2D" stroke-width="1.4" fill="none"/>
-        <!-- Highlight -->
-        <ellipse cx="50" cy="73" rx="5" ry="7" fill="rgba(255,255,255,0.18)" transform="rotate(-25 50 73)"/>
-      </svg>
-      <span class="brand-text">Ball Don't Lie</span>
+    <!-- Headlines -->
+    <div class="headlines-bar">
+      <span class="headlines-label">Headlines</span>
+      <span class="headlines-items" id="headlinesItems">No headlines yet — connect a news source to see live updates.</span>
     </div>
 
-    <!-- Input (centered on landing) -->
-    <div class="input-area">
-      <form class="input-bubble" id="chatForm" autocomplete="off">
-        <svg class="ball-icon" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="24" cy="24" r="20" fill="#D4782F"/>
-          <circle cx="24" cy="24" r="20" stroke="#2D2D2D" stroke-width="1.2" fill="none"/>
-          <line x1="4" y1="24" x2="44" y2="24" stroke="#2D2D2D" stroke-width="1"/>
-          <line x1="24" y1="4" x2="24" y2="44" stroke="#2D2D2D" stroke-width="1"/>
-          <path d="M24 4 C16 12, 16 36, 24 44" stroke="#2D2D2D" stroke-width="1" fill="none"/>
-          <path d="M24 4 C32 12, 32 36, 24 44" stroke="#2D2D2D" stroke-width="1" fill="none"/>
-          <ellipse cx="19" cy="18" rx="3" ry="4" fill="rgba(255,255,255,0.18)" transform="rotate(-25 19 18)"/>
+    <!-- Scores ticker -->
+    <div class="scores-bar">
+      <span id="scoresContent">Live scores coming soon</span>
+      <a href="/static/betting.html" class="betting-link">Betting Picks</a>
+    </div>
+
+    <!-- LANDING PAGE (centered branding + input) -->
+    <div class="landing" id="landing">
+      <div class="logo">
+        <svg class="logo-icon" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Backboard -->
+          <rect x="36" y="6" width="48" height="5" rx="2" fill="#3A3A3A"/>
+          <!-- Backboard support -->
+          <rect x="58" y="11" width="4" height="14" rx="1" fill="#3A3A3A"/>
+          <!-- Rim -->
+          <ellipse cx="60" cy="28" rx="18" ry="5" stroke="#D4782F" stroke-width="2.5" fill="none"/>
+          <!-- Net -->
+          <path d="M42 30 C45 40,48 46,51 52" stroke="#C8B8A4" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+          <path d="M48 31 C50 40,52 46,54 52" stroke="#C8B8A4" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+          <path d="M54 32 C56 40,57 46,57 52" stroke="#C8B8A4" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+          <path d="M60 33 C60 40,60 46,60 52" stroke="#C8B8A4" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+          <path d="M66 32 C64 40,63 46,63 52" stroke="#C8B8A4" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+          <path d="M72 31 C70 40,68 46,66 52" stroke="#C8B8A4" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+          <path d="M78 30 C75 40,72 46,69 52" stroke="#C8B8A4" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+          <!-- Cross net threads -->
+          <path d="M44 36 Q60 40,76 36" stroke="#C8B8A4" stroke-width="0.8" fill="none"/>
+          <path d="M48 44 Q60 48,72 44" stroke="#C8B8A4" stroke-width="0.8" fill="none"/>
+          <!-- Basketball -->
+          <circle cx="60" cy="82" r="24" fill="#D4782F"/>
+          <circle cx="60" cy="82" r="24" stroke="#2D2D2D" stroke-width="1.8" fill="none"/>
+          <!-- Horizontal seam -->
+          <line x1="36" y1="82" x2="84" y2="82" stroke="#2D2D2D" stroke-width="1.4"/>
+          <!-- Vertical seam -->
+          <line x1="60" y1="58" x2="60" y2="106" stroke="#2D2D2D" stroke-width="1.4"/>
+          <!-- Left curved seam -->
+          <path d="M60 58 C44 68, 44 96, 60 106" stroke="#2D2D2D" stroke-width="1.4" fill="none"/>
+          <!-- Right curved seam -->
+          <path d="M60 58 C76 68, 76 96, 60 106" stroke="#2D2D2D" stroke-width="1.4" fill="none"/>
+          <!-- Highlight -->
+          <ellipse cx="50" cy="73" rx="5" ry="7" fill="rgba(255,255,255,0.18)" transform="rotate(-25 50 73)"/>
         </svg>
-        <input type="text" id="questionInput" placeholder="Ask me anything NBA-related" required>
-        <button type="submit" id="sendBtn">Send</button>
-      </form>
-    </div>
-  </div>
+        <span class="brand-text">Ball Don't Lie</span>
+      </div>
 
-  <!-- CHAT VIEW (shown after first message) -->
-  <div class="chat-view" id="chatView">
-    <div class="chat-header">
-      <svg class="logo-icon" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect x="36" y="6" width="48" height="5" rx="2" fill="#3A3A3A"/>
-        <rect x="58" y="11" width="4" height="14" rx="1" fill="#3A3A3A"/>
-        <ellipse cx="60" cy="28" rx="18" ry="5" stroke="#D4782F" stroke-width="2.5" fill="none"/>
-        <path d="M42 30 C45 40,48 46,51 52" stroke="#C8B8A4" stroke-width="1.2" fill="none" stroke-linecap="round"/>
-        <path d="M48 31 C50 40,52 46,54 52" stroke="#C8B8A4" stroke-width="1.2" fill="none" stroke-linecap="round"/>
-        <path d="M54 32 C56 40,57 46,57 52" stroke="#C8B8A4" stroke-width="1.2" fill="none" stroke-linecap="round"/>
-        <path d="M60 33 C60 40,60 46,60 52" stroke="#C8B8A4" stroke-width="1.2" fill="none" stroke-linecap="round"/>
-        <path d="M66 32 C64 40,63 46,63 52" stroke="#C8B8A4" stroke-width="1.2" fill="none" stroke-linecap="round"/>
-        <path d="M72 31 C70 40,68 46,66 52" stroke="#C8B8A4" stroke-width="1.2" fill="none" stroke-linecap="round"/>
-        <path d="M78 30 C75 40,72 46,69 52" stroke="#C8B8A4" stroke-width="1.2" fill="none" stroke-linecap="round"/>
-        <path d="M44 36 Q60 40,76 36" stroke="#C8B8A4" stroke-width="0.8" fill="none"/>
-        <path d="M48 44 Q60 48,72 44" stroke="#C8B8A4" stroke-width="0.8" fill="none"/>
-        <circle cx="60" cy="82" r="24" fill="#D4782F"/>
-        <circle cx="60" cy="82" r="24" stroke="#2D2D2D" stroke-width="1.8" fill="none"/>
-        <line x1="36" y1="82" x2="84" y2="82" stroke="#2D2D2D" stroke-width="1.4"/>
-        <line x1="60" y1="58" x2="60" y2="106" stroke="#2D2D2D" stroke-width="1.4"/>
-        <path d="M60 58 C44 68, 44 96, 60 106" stroke="#2D2D2D" stroke-width="1.4" fill="none"/>
-        <path d="M60 58 C76 68, 76 96, 60 106" stroke="#2D2D2D" stroke-width="1.4" fill="none"/>
-        <ellipse cx="50" cy="73" rx="5" ry="7" fill="rgba(255,255,255,0.18)" transform="rotate(-25 50 73)"/>
-      </svg>
-      <span class="brand-text">Ball Don't Lie</span>
+      <!-- Input (centered on landing) -->
+      <div class="input-area">
+        <form class="input-bubble" id="chatForm" autocomplete="off">
+          <svg class="ball-icon" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="24" cy="24" r="20" fill="#D4782F"/>
+            <circle cx="24" cy="24" r="20" stroke="#2D2D2D" stroke-width="1.2" fill="none"/>
+            <line x1="4" y1="24" x2="44" y2="24" stroke="#2D2D2D" stroke-width="1"/>
+            <line x1="24" y1="4" x2="24" y2="44" stroke="#2D2D2D" stroke-width="1"/>
+            <path d="M24 4 C16 12, 16 36, 24 44" stroke="#2D2D2D" stroke-width="1" fill="none"/>
+            <path d="M24 4 C32 12, 32 36, 24 44" stroke="#2D2D2D" stroke-width="1" fill="none"/>
+            <ellipse cx="19" cy="18" rx="3" ry="4" fill="rgba(255,255,255,0.18)" transform="rotate(-25 19 18)"/>
+          </svg>
+          <input type="text" id="questionInput" placeholder="Ask me anything NBA-related" required>
+          <button type="submit" id="sendBtn">Send</button>
+        </form>
+      </div>
     </div>
 
-    <div class="messages" id="messages"></div>
+    <!-- CHAT VIEW (shown after first message) -->
+    <div class="chat-view" id="chatView">
+      <div class="chat-header">
+        <svg class="logo-icon" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="36" y="6" width="48" height="5" rx="2" fill="#3A3A3A"/>
+          <rect x="58" y="11" width="4" height="14" rx="1" fill="#3A3A3A"/>
+          <ellipse cx="60" cy="28" rx="18" ry="5" stroke="#D4782F" stroke-width="2.5" fill="none"/>
+          <path d="M42 30 C45 40,48 46,51 52" stroke="#C8B8A4" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+          <path d="M48 31 C50 40,52 46,54 52" stroke="#C8B8A4" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+          <path d="M54 32 C56 40,57 46,57 52" stroke="#C8B8A4" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+          <path d="M60 33 C60 40,60 46,60 52" stroke="#C8B8A4" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+          <path d="M66 32 C64 40,63 46,63 52" stroke="#C8B8A4" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+          <path d="M72 31 C70 40,68 46,66 52" stroke="#C8B8A4" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+          <path d="M78 30 C75 40,72 46,69 52" stroke="#C8B8A4" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+          <path d="M44 36 Q60 40,76 36" stroke="#C8B8A4" stroke-width="0.8" fill="none"/>
+          <path d="M48 44 Q60 48,72 44" stroke="#C8B8A4" stroke-width="0.8" fill="none"/>
+          <circle cx="60" cy="82" r="24" fill="#D4782F"/>
+          <circle cx="60" cy="82" r="24" stroke="#2D2D2D" stroke-width="1.8" fill="none"/>
+          <line x1="36" y1="82" x2="84" y2="82" stroke="#2D2D2D" stroke-width="1.4"/>
+          <line x1="60" y1="58" x2="60" y2="106" stroke="#2D2D2D" stroke-width="1.4"/>
+          <path d="M60 58 C44 68, 44 96, 60 106" stroke="#2D2D2D" stroke-width="1.4" fill="none"/>
+          <path d="M60 58 C76 68, 76 96, 60 106" stroke="#2D2D2D" stroke-width="1.4" fill="none"/>
+          <ellipse cx="50" cy="73" rx="5" ry="7" fill="rgba(255,255,255,0.18)" transform="rotate(-25 50 73)"/>
+        </svg>
+        <span class="brand-text">Ball Don't Lie</span>
+      </div>
 
-    <!-- Input (bottom-pinned in chat mode) -->
-    <div class="input-area" id="chatInputArea"></div>
+      <div class="messages" id="messages"></div>
+
+      <!-- Input (bottom-pinned in chat mode) -->
+      <div class="input-area" id="chatInputArea"></div>
+    </div>
+
   </div>
-
 </div>
 
 <script>
@@ -588,8 +768,25 @@ const chatViewEl = document.getElementById('chatView');
 const chatInputArea = document.getElementById('chatInputArea');
 const headlinesItems = document.getElementById('headlinesItems');
 const scoresContent = document.getElementById('scoresContent');
+const mainContent = document.getElementById('mainContent');
+
 let chatActive = false;
 let conversationHistory = [];
+
+function resetToLanding() {
+  chatActive = false;
+  conversationHistory = [];
+  messagesEl.innerHTML = '';
+  landingEl.classList.remove('hidden');
+  chatViewEl.classList.remove('active');
+  // Move form back to landing
+  const landingInputArea = landingEl.querySelector('.input-area');
+  if (landingInputArea && form.parentElement !== landingInputArea) {
+    landingInputArea.appendChild(form);
+  }
+  input.value = '';
+  input.focus();
+}
 
 // ─── Headlines ───
 async function fetchHeadlines() {
@@ -641,6 +838,7 @@ async function fetchScores() {
   } catch (e) { /* keep placeholder */ }
 }
 
+// ─── Init ───
 fetchHeadlines();
 fetchScores();
 setInterval(fetchScores, 60000);
@@ -653,6 +851,25 @@ function switchToChat() {
   // Move the form into the chat input area
   chatInputArea.appendChild(form);
   input.focus();
+}
+
+function createLoader(text) {
+  const loader = document.createElement('div');
+  loader.className = 'loading';
+  loader.innerHTML = `
+    <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="24" cy="24" r="20" fill="#D4782F"/>
+      <circle cx="24" cy="24" r="20" stroke="#2D2D2D" stroke-width="1.2" fill="none"/>
+      <line x1="4" y1="24" x2="44" y2="24" stroke="#2D2D2D" stroke-width="1"/>
+      <line x1="24" y1="4" x2="24" y2="44" stroke="#2D2D2D" stroke-width="1"/>
+      <path d="M24 4 C16 12, 16 36, 24 44" stroke="#2D2D2D" stroke-width="1" fill="none"/>
+      <path d="M24 4 C32 12, 32 36, 24 44" stroke="#2D2D2D" stroke-width="1" fill="none"/>
+      <ellipse cx="19" cy="18" rx="3" ry="4" fill="rgba(255,255,255,0.18)" transform="rotate(-25 19 18)"/>
+    </svg>
+    <div class="ball-shadow"></div>
+    <span class="loading-text">${text}</span>
+  `;
+  return loader;
 }
 
 form.addEventListener('submit', async (e) => {
@@ -668,33 +885,17 @@ form.addEventListener('submit', async (e) => {
   input.value = '';
   sendBtn.disabled = true;
 
-  // Add bouncing basketball loader
-  const loader = document.createElement('div');
-  loader.className = 'loading';
-  loader.innerHTML = `
-    <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="24" cy="24" r="20" fill="#D4782F"/>
-      <circle cx="24" cy="24" r="20" stroke="#2D2D2D" stroke-width="1.2" fill="none"/>
-      <line x1="4" y1="24" x2="44" y2="24" stroke="#2D2D2D" stroke-width="1"/>
-      <line x1="24" y1="4" x2="24" y2="44" stroke="#2D2D2D" stroke-width="1"/>
-      <path d="M24 4 C16 12, 16 36, 24 44" stroke="#2D2D2D" stroke-width="1" fill="none"/>
-      <path d="M24 4 C32 12, 32 36, 24 44" stroke="#2D2D2D" stroke-width="1" fill="none"/>
-      <ellipse cx="19" cy="18" rx="3" ry="4" fill="rgba(255,255,255,0.18)" transform="rotate(-25 19 18)"/>
-    </svg>
-    <div class="ball-shadow"></div>
-    <span class="loading-text">Thinking...</span>
-  `;
+  const loader = createLoader('Thinking...');
   messagesEl.appendChild(loader);
   scrollToBottom();
 
   try {
+    const body = { question, message_history: historySnapshot };
+
     const res = await fetch('/ask', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        question,
-        message_history: historySnapshot,
-      }),
+      body: JSON.stringify(body),
     });
     if (!res.ok) throw new Error(`Server error: ${res.status}`);
     const data = await res.json();
@@ -782,34 +983,22 @@ async function startGamePreview(game) {
 
   sendBtn.disabled = true;
 
-  const loader = document.createElement('div');
-  loader.className = 'loading';
-  loader.innerHTML = `
-    <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="24" cy="24" r="20" fill="#D4782F"/>
-      <circle cx="24" cy="24" r="20" stroke="#2D2D2D" stroke-width="1.2" fill="none"/>
-      <line x1="4" y1="24" x2="44" y2="24" stroke="#2D2D2D" stroke-width="1"/>
-      <line x1="24" y1="4" x2="24" y2="44" stroke="#2D2D2D" stroke-width="1"/>
-      <path d="M24 4 C16 12, 16 36, 24 44" stroke="#2D2D2D" stroke-width="1" fill="none"/>
-      <path d="M24 4 C32 12, 32 36, 24 44" stroke="#2D2D2D" stroke-width="1" fill="none"/>
-      <ellipse cx="19" cy="18" rx="3" ry="4" fill="rgba(255,255,255,0.18)" transform="rotate(-25 19 18)"/>
-    </svg>
-    <div class="ball-shadow"></div>
-    <span class="loading-text">Building preview...</span>
-  `;
+  const loader = createLoader('Building preview...');
   messagesEl.appendChild(loader);
   scrollToBottom();
 
   try {
+    const body = {
+      home_team_abbr: game.home_team_abbr,
+      away_team_abbr: game.away_team_abbr,
+      home_team_id: game.home_team_id,
+      away_team_id: game.away_team_id,
+    };
+
     const res = await fetch('/game-preview', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        home_team_abbr: game.home_team_abbr,
-        away_team_abbr: game.away_team_abbr,
-        home_team_id: game.home_team_id,
-        away_team_id: game.away_team_id,
-      }),
+      body: JSON.stringify(body),
     });
     if (!res.ok) throw new Error(`Server error: ${res.status}`);
     const data = await res.json();

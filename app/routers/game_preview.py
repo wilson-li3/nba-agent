@@ -35,13 +35,15 @@ async def game_preview(req: GamePreviewRequest):
     except Exception:
         logger.error(
             "Game preview failed: %s @ %s",
-            req.away_team_abbr, req.home_team_abbr,
+            req.away_team_abbr,
+            req.home_team_abbr,
             exc_info=True,
         )
         return GamePreviewResponse(
             answer="Sorry, something went wrong generating the game preview. Please try again.",
             category="error",
         )
+
     return GamePreviewResponse(
         answer=result["answer"],
         category=result.get("category", "game_preview"),

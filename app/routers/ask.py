@@ -12,7 +12,7 @@ router = APIRouter()
 
 class AskRequest(BaseModel):
     question: str
-    message_history: list[dict] | None = None  # [{"role": "user"|"assistant", "content": "..."}]
+    message_history: list[dict] | None = None
 
 
 class AskResponse(BaseModel):
@@ -34,6 +34,7 @@ async def ask(req: AskRequest):
             category="error",
             answer="Sorry, something went wrong. Please try again in a moment.",
         )
+
     return AskResponse(
         question=req.question,
         category=result.get("category", "stats"),
