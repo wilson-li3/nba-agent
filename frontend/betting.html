@@ -629,14 +629,15 @@ function recomputeConfidence(pick) {
     total += score * w;
     wSum += w;
   }
-  return wSum > 0 ? total / wSum * (wSum / 1.0) : 0;
+  // Weighted average — always 0–1
+  return wSum > 0 ? Math.min(1, total / wSum) : 0;
 }
 
 function recomputeAllPicks() {
   for (const p of currentPicks) {
     p._userConfidence = recomputeConfidence(p);
   }
-  currentPicks.sort((a, b) => b._userConfidence - a._userConfidence);
+  // Don't re-sort — preserves selectedIndex and betSlip indices
 }
 
 // ── Fetch picks ──
@@ -764,9 +765,15 @@ function onSliderChange(el) {
 
   recomputeAllPicks();
   renderPicksList();
-  if (selectedIndex >= 0) {
-    selectPick(selectedIndex);
+  // Update graph in-place instead of full re-render (avoids freeze)
+  if (selectedIndex >= 0 && currentPicks[selectedIndex]) {
+    const pick = currentPicks[selectedIndex];
+    // Update confidence label in graph header
+    const label = document.getElementById('graphPlayerLabel');
+    if (label) label.textContent = `${pick.player_name} — Over ${pick.line} ${({'pts':'PTS','reb':'REB','ast':'AST','fg3m':'3PM','pra':'PRA'}[pick.prop_type] || pick.prop_type)}`;
+    renderGraph(pick);
   }
+  updateBetSlipCalc();
 }
 
 function resetWeights() {
@@ -774,7 +781,10 @@ function resetWeights() {
   recomputeAllPicks();
   renderPicksList();
   renderSliders();
-  if (selectedIndex >= 0) selectPick(selectedIndex);
+  if (selectedIndex >= 0 && currentPicks[selectedIndex]) {
+    renderGraph(currentPicks[selectedIndex]);
+  }
+  updateBetSlipCalc();
 }
 
 // ── Select a pick ──
