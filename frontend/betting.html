@@ -521,83 +521,31 @@ let betSlip = []; // array of pick indices
 let bankroll = 1000;
 
 // Adjustable weights (start with server defaults, user can tweak)
+// These drive the what-if slider view; the server confidence itself is a
+// calibrated probability from the prediction engine.
 let userWeights = {
-  hit_rate_l10: 0.30,
-  hit_rate_l20: 0.15,
-  trend: 0.15,
-  consistency: 0.10,
-  matchup: 0.10,
+  recent_form: 0.25,
+  hit_rate_l20: 0.20,
+  volatility: 0.15,
+  minutes_trend: 0.12,
+  opp_defense: 0.10,
+  rest: 0.10,
   home_away: 0.08,
-  opp_defense: 0.07,
-  b2b: 0.05,
 };
 
 const DEFAULT_WEIGHTS = {...userWeights};
 
-const FACTOR_ORDER = ['hit_rate_l10','hit_rate_l20','trend','consistency','matchup','home_away','opp_defense','b2b'];
+const FACTOR_ORDER = ['recent_form','hit_rate_l20','volatility','minutes_trend','opp_defense','rest','home_away'];
 const FACTOR_LABELS = {
-  hit_rate_l10:'Hit Rate L10', hit_rate_l20:'Hit Rate L20', trend:'Trend',
-  consistency:'Consistency', matchup:'Matchup', home_away:'Home/Away',
-  opp_defense:'Opp Defense', b2b:'Rest',
+  recent_form:'Recent Form', hit_rate_l20:'Hit Rate L20', volatility:'Volatility',
+  minutes_trend:'Minutes Trend', opp_defense:'Opp Defense', rest:'Rest',
+  home_away:'Home/Away',
 };
 const FACTOR_CATS = {
-  hit_rate_l10:'historical', hit_rate_l20:'historical', trend:'trend',
-  consistency:'trend', matchup:'matchup', home_away:'situational',
-  opp_defense:'matchup', b2b:'situational',
+  recent_form:'trend', hit_rate_l20:'historical', volatility:'derived',
+  minutes_trend:'advanced', opp_defense:'matchup', rest:'situational',
+  home_away:'situational',
 };
-
-// ── Extra decorative nodes for a denser graph ──
-const EXTRA_NODES = [
-  {id:'usage_rate', label:'Usage Rate', category:'advanced', detail:'Estimated usage rate based on FGA and minutes share'},
-  {id:'minutes_avg', label:'Minutes', category:'advanced', detail:'Average minutes played in recent games'},
-  {id:'floor_ceiling', label:'Floor/Ceiling', category:'derived', detail:'Statistical floor and ceiling range from recent variance'},
-  {id:'pace_factor', label:'Pace Factor', category:'context', detail:'Team pace of play — higher pace means more possessions and stat opportunities'},
-  {id:'injury_risk', label:'Injury Signal', category:'meta', detail:'Injury history and recent load management signals'},
-  {id:'line_movement', label:'Line Movement', category:'meta', detail:'Projected line movement based on public betting volume'},
-  {id:'correlation', label:'Correlation', category:'derived', detail:'Cross-stat correlation — how pts/reb/ast move together for this player'},
-  {id:'recency_bias', label:'Recency Bias', category:'context', detail:'Adjusts for how much recent performance deviates from baseline'},
-  {id:'clutch_factor', label:'Clutch Factor', category:'advanced', detail:'Performance in close games and 4th quarter situations'},
-  {id:'venue_effect', label:'Venue Effect', category:'context', detail:'Arena-specific performance adjustments (altitude, crowd, travel)'},
-];
-
-// Extra edges — connects decorative nodes to real ones and each other
-const EXTRA_EDGES = [
-  {source:'usage_rate', target:'hit_rate_l10', weight:0.35},
-  {source:'usage_rate', target:'trend', weight:0.28},
-  {source:'usage_rate', target:'confidence', weight:0.12},
-  {source:'minutes_avg', target:'usage_rate', weight:0.45},
-  {source:'minutes_avg', target:'consistency', weight:0.30},
-  {source:'minutes_avg', target:'hit_rate_l20', weight:0.20},
-  {source:'floor_ceiling', target:'consistency', weight:0.50},
-  {source:'floor_ceiling', target:'hit_rate_l10', weight:0.25},
-  {source:'floor_ceiling', target:'confidence', weight:0.10},
-  {source:'pace_factor', target:'usage_rate', weight:0.40},
-  {source:'pace_factor', target:'opp_defense', weight:0.35},
-  {source:'pace_factor', target:'matchup', weight:0.22},
-  {source:'injury_risk', target:'b2b', weight:0.55},
-  {source:'injury_risk', target:'minutes_avg', weight:0.38},
-  {source:'injury_risk', target:'confidence', weight:0.08},
-  {source:'line_movement', target:'confidence', weight:0.15},
-  {source:'line_movement', target:'hit_rate_l10', weight:0.18},
-  {source:'line_movement', target:'matchup', weight:0.12},
-  {source:'correlation', target:'floor_ceiling', weight:0.42},
-  {source:'correlation', target:'trend', weight:0.30},
-  {source:'correlation', target:'usage_rate', weight:0.20},
-  {source:'recency_bias', target:'trend', weight:0.55},
-  {source:'recency_bias', target:'hit_rate_l10', weight:0.35},
-  {source:'recency_bias', target:'hit_rate_l20', weight:0.15},
-  {source:'clutch_factor', target:'consistency', weight:0.28},
-  {source:'clutch_factor', target:'home_away', weight:0.22},
-  {source:'clutch_factor', target:'usage_rate', weight:0.18},
-  {source:'venue_effect', target:'home_away', weight:0.50},
-  {source:'venue_effect', target:'pace_factor', weight:0.30},
-  {source:'venue_effect', target:'injury_risk', weight:0.15},
-  // Cross-links between decorative nodes
-  {source:'correlation', target:'recency_bias', weight:0.25},
-  {source:'clutch_factor', target:'floor_ceiling', weight:0.20},
-  {source:'line_movement', target:'recency_bias', weight:0.18},
-  {source:'venue_effect', target:'clutch_factor', weight:0.12},
-];
 
 function teamLogo(abbr) {
   const MAP = {
@@ -834,17 +782,6 @@ function renderGraph(pick) {
     }
   }
 
-  // Add extra decorative nodes with pseudo-random values seeded by pick
-  const seed = pick.player_name.length + pick.line;
-  for (const en of EXTRA_NODES) {
-    const pseudoVal = ((seed * 7 + en.id.length * 13) % 80 + 20) / 100;
-    nodes.push({
-      ...en,
-      value: pseudoVal,
-      weight: 0.04 + (en.id.length % 5) * 0.02,
-    });
-  }
-
   // Build combined edges
   const edges = graphData.edges.map(e => ({...e}));
   // Update real factor->confidence edge weights from sliders
@@ -853,10 +790,6 @@ function renderGraph(pick) {
     if (userWeights[srcId] !== undefined && (typeof e.target === 'string' ? e.target : e.target.id) === 'confidence') {
       e.weight = userWeights[srcId];
     }
-  }
-
-  for (const ee of EXTRA_EDGES) {
-    edges.push({...ee});
   }
 
   const nodeIds = new Set(nodes.map(n => n.id));
