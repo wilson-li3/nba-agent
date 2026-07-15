@@ -120,9 +120,10 @@ class RollingDefense:
 
 
 def run_backtest(conn, season_id: str, mode: str, params: dict | None = None,
-                 collect: list | None = None) -> list[dict]:
+                 collect: list | None = None, rows: list[dict] | None = None) -> list[dict]:
     """Run one season. Returns list of prediction records."""
-    rows = load_season(conn, season_id)
+    if rows is None:
+        rows = load_season(conn, season_id)
     allowed_map, team_dates = build_team_context(rows)
 
     history = defaultdict(lambda: {s: [] for s in STATS} | {"minutes": [], "ha": defaultdict(list)})
