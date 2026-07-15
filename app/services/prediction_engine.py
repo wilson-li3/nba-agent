@@ -219,7 +219,11 @@ def predict(
     sigma = max(sigma, P["sd_floor"])
 
     # ── 5. Distribution probability (continuity-corrected normal) ──
-    z = (line - 0.5 - mu) / sigma
+    # P(X >= k) for integer-valued X: Φ((k - 0.5 - mu) / sigma), where the
+    # smallest winning integer k is line itself for whole-number lines
+    # ("25+ pts") and ceil(line) for book-style half-point lines (25.5).
+    k_win = math.ceil(line) if line != int(line) else int(line)
+    z = (k_win - 0.5 - mu) / sigma
     prob_model = 1.0 - _norm_cdf(z)
 
     # ── 6. Blend with empirical hit rate (shrinkage) ──

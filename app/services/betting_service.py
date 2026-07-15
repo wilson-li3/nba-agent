@@ -7,9 +7,15 @@ from app.db import get_pool
 from app.prompts.format_betting import FORMAT_BETTING_PROMPT
 from app.prompts.parse_betting import PARSE_BETTING_PROMPT
 from app.services.llm import chat_completion
+from app.services.prediction_engine import predict
 from app.services.scores_service import get_scores
 
 logger = logging.getLogger(__name__)
+
+_ENGINE_STATS = {"pts", "reb", "ast", "fg3m", "pra"}
+
+# Default lines for common props when the user doesn't give one
+_DEFAULT_LINES = {"pts": 20, "reb": 8, "ast": 6, "fg3m": 3, "pra": 30}
 
 # Safety check — same pattern as stats_service
 _UNSAFE_PATTERN = re.compile(
@@ -61,6 +67,81 @@ async def _execute_query(pool, sql: str, params: list | None = None) -> list[dic
     except Exception:
         logger.error("Betting query failed: %s", sql, exc_info=True)
         return []
+
+
+async def _engine_prediction(
+    pool, player_name: str, stat: str, line: float | None,
+    opponent_abbr: str | None = None, location: str | None = None,
+) -> dict | None:
+    """Run the calibrated prediction engine for one player prop.
+
+    Returns a dict the formatting LLM can quote directly, or None if the
+    player/stat can't be resolved.
+    """
+    if stat not in _ENGINE_STATS:
+        return None
+    line = line if line is not None else _DEFAULT_LINES[stat]
+
+    logs_sql = """
+    SELECT s.min AS minutes, s.pts, s.reb, s.ast, s.fg3m, s.matchup
+    FROM player_game_stats s
+    WHERE s.player_id = (
+        SELECT player_id FROM players
+        WHERE unaccent(display_name) ILIKE unaccent('%' || $1 || '%')
+        LIMIT 1
+    )
+      AND s.season_id = (SELECT MAX(season_id) FROM player_game_stats)
+      AND s.min > 0
+    ORDER BY s.game_date DESC;
+    """
+    rows = await _execute_query(pool, logs_sql, [player_name])
+    if not rows:
+        return None
+
+    def stat_val(r: dict) -> float:
+        if stat == "pra":
+            return float(r["pts"] + r["reb"] + r["ast"])
+        return float(r[stat])
+
+    values = [stat_val(r) for r in rows]
+    minutes = [float(r["minutes"]) for r in rows]
+
+    home_vals = [stat_val(r) for r in rows if " vs. " in r["matchup"]]
+    away_vals = [stat_val(r) for r in rows if " vs. " not in r["matchup"]]
+    ha_diff = None
+    if len(home_vals) >= 5 and len(away_vals) >= 5:
+        ha_diff = sum(home_vals) / len(home_vals) - sum(away_vals) / len(away_vals)
+
+    opp_factor = 1.0
+    if opponent_abbr:
+        def_col = {"pts": "opp_ppg_allowed", "reb": "opp_rpg_allowed",
+                   "ast": "opp_apg_allowed", "fg3m": "opp_fg3mpg_allowed",
+                   "pra": "opp_ppg_allowed"}[stat]
+        def_rows = await _execute_query(
+            pool, f"SELECT team_abbr, {def_col} AS allowed FROM mv_team_defensive_ratings;")
+        if def_rows:
+            league = sum(float(r["allowed"]) for r in def_rows) / len(def_rows)
+            for r in def_rows:
+                if r["team_abbr"] == opponent_abbr and league > 0:
+                    opp_factor = float(r["allowed"]) / league
+                    break
+
+    is_home = {"home": True, "away": False}.get(location or "")
+    p = predict(values, minutes, float(line), stat=stat, opp_factor=opp_factor,
+                is_home=is_home, home_away_diff=ha_diff)
+    if not p.eligible:
+        return {"eligible": False, "reason": p.reason}
+    return {
+        "eligible": True,
+        "line": line,
+        "prob_over": p.prob,
+        "prob_under": round(1 - p.prob, 4),
+        "projected_mean": p.mu,
+        "projected_sd": p.sigma,
+        "hit_rate_l20": p.hit_rate_l20,
+        "note": "calibrated probability from the backtested prediction engine "
+                "(walk-forward validated on multiple seasons)",
+    }
 
 
 def _build_hit_rate_query(player_name: str) -> tuple[str, list]:
@@ -345,9 +426,16 @@ async def answer_betting_question(
         for k, r in zip(keys, results):
             collected_data[k] = r
 
-        # Add prop context
+        # Add prop context + calibrated engine prediction
         if props:
             collected_data["requested_prop"] = props[0]
+            prop = props[0]
+            pred = await _engine_prediction(
+                pool, player_name, prop.get("stat", "pts"), prop.get("line"),
+                opponent_abbr=opponent_abbr,
+            )
+            if pred:
+                collected_data["model_prediction"] = pred
 
     elif intent_type == "FIND_PICKS":
         if players:
@@ -468,6 +556,17 @@ async def answer_betting_question(
         )
         for k, r in zip(keys, results):
             collected_data[k] = r
+
+        # Calibrated engine predictions per leg
+        leg_preds = await asyncio.gather(*[
+            _engine_prediction(pool, prop.get("player", ""), prop.get("stat", "pts"),
+                               prop.get("line"))
+            for prop in props if prop.get("player")
+        ])
+        collected_data["model_predictions_per_leg"] = [
+            {"leg": prop.get("player"), **(pred or {"eligible": False})}
+            for prop, pred in zip([p for p in props if p.get("player")], leg_preds)
+        ]
 
         collected_data["parlay_legs"] = props
         collected_data["correlation_warnings"] = _detect_parlay_correlations(props)
