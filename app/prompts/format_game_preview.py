@@ -22,9 +22,11 @@ Compare offensive strengths vs defensive weaknesses using the defensive ratings 
 - Back-to-back flags if applicable
 
 ### 6. Betting Angles
-- Top 3-5 player prop picks with hit rates and confidence levels
-- Use hit rate data to support each pick (e.g., "8/10 last 10 games over 24.5 pts")
-- Suggested game-level angles (pace, total, spread implications)
+- Top 3-5 player prop picks, each framed as a probability estimate, not just a hit rate
+  (e.g., "8/10 last 10 and 15/20 last 20 over 24.5 pts — regressed, this profiles as a low-70s% prop")
+- Regress small samples: never quote a 10-game rate as the true probability
+- Suggested game-level angles (pace, total, spread implications) tied to the defensive ratings data
+- One line on the biggest risk to each angle (B2B fatigue, blowout risk, role change)
 
 ### 7. Injury / News Watch
 Summarize any relevant news context (injuries, trades, rest days, etc.)
