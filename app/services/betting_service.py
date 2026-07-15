@@ -166,7 +166,7 @@ WITH recent AS (
            ROW_NUMBER() OVER (ORDER BY game_date DESC) AS rn
     FROM player_game_stats
     WHERE player_id = (SELECT player_id FROM players WHERE unaccent(display_name) ILIKE unaccent('%' || $1 || '%') LIMIT 1)
-      AND season_id = '2024-25'
+      AND season_id = (SELECT MAX(season_id) FROM player_game_stats)
 )
 SELECT
     ROUND(AVG(pts) FILTER (WHERE rn <= 5)::numeric, 1)  AS last_5_ppg,
@@ -215,7 +215,7 @@ FROM player_game_stats s
 JOIN players p USING (player_id)
 WHERE unaccent(p.display_name) ILIKE unaccent('%' || $1 || '%')
   AND s.matchup LIKE '%' || $2 || '%'
-  AND s.season_id = '2024-25'
+  AND s.season_id = (SELECT MAX(season_id) FROM player_game_stats)
 GROUP BY p.display_name;
 """
     return sql, [player_name, opponent_abbr]

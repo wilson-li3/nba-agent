@@ -46,7 +46,7 @@ SELECT p.display_name, p.position, p.jersey,
 FROM player_game_stats s
 JOIN players p USING (player_id)
 WHERE s.team_abbr = $1
-  AND s.season_id = '2024-25'
+  AND s.season_id = (SELECT MAX(season_id) FROM player_game_stats)
   AND s.game_date >= CURRENT_DATE - 21
 GROUP BY p.player_id, p.display_name, p.position, p.jersey
 ORDER BY AVG(s.min) DESC
@@ -64,7 +64,7 @@ FROM mv_player_season_averages m
 JOIN players p ON p.player_id = m.player_id
 JOIN teams t ON t.team_id = p.team_id
 WHERE t.abbreviation = $1
-  AND m.season_id = '2024-25'
+  AND m.season_id = (SELECT MAX(season_id) FROM player_game_stats)
 ORDER BY m.ppg DESC
 LIMIT 8;
 """
@@ -81,7 +81,7 @@ SELECT s.game_date,
 FROM player_game_stats s
 WHERE s.team_abbr = $1
   AND s.matchup LIKE '%' || $2 || '%'
-  AND s.season_id = '2024-25'
+  AND s.season_id = (SELECT MAX(season_id) FROM player_game_stats)
 GROUP BY s.game_id, s.game_date, s.matchup
 ORDER BY s.game_date DESC;
 """
@@ -131,7 +131,7 @@ WITH recent AS (
     JOIN players p USING (player_id)
     JOIN teams t ON t.team_id = p.team_id
     WHERE t.abbreviation = $1
-      AND s.season_id = '2024-25'
+      AND s.season_id = (SELECT MAX(season_id) FROM player_game_stats)
 )
 SELECT display_name,
        ROUND(AVG(pts) FILTER (WHERE rn <= 5)::numeric, 1) AS last_5_ppg,

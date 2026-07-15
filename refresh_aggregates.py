@@ -118,7 +118,7 @@ WITH recent_games AS (
         ROW_NUMBER() OVER (PARTITION BY s.player_id ORDER BY s.game_date DESC) AS rn
     FROM player_game_stats s
     JOIN players p USING (player_id)
-    WHERE s.season_id = '2024-25'
+    WHERE s.season_id = (SELECT MAX(season_id) FROM player_game_stats)
       AND p.is_active = true
 )
 SELECT
@@ -196,7 +196,7 @@ SELECT
     )                                              AS fg_pct
 FROM player_game_stats s
 JOIN players p USING (player_id)
-WHERE s.season_id = '2024-25'
+WHERE s.season_id = (SELECT MAX(season_id) FROM player_game_stats)
 GROUP BY s.player_id, p.display_name,
          CASE WHEN s.matchup LIKE '%vs.%' THEN 'Home' ELSE 'Away' END;
 """
@@ -213,7 +213,7 @@ WITH opponent_stats AS (
         END AS opponent_abbr,
         s.pts, s.reb, s.ast, s.fg3m
     FROM player_game_stats s
-    WHERE s.season_id = '2024-25'
+    WHERE s.season_id = (SELECT MAX(season_id) FROM player_game_stats)
 )
 SELECT
     t.team_id,
