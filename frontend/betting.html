@@ -5,159 +5,188 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Betting Picks | Ball Don't Lie</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/iconify-icon@2/dist/iconify-icon.min.js"></script>
 <style>
 :root{
-  --orange:#D4782F;
-  --orange-light:#F0C9A0;
-  --orange-pale:#FDF0E2;
-  --cream:#FBF8F4;
-  --cream-dark:#F3EDE5;
-  --text:#2D2D2D;
-  --text-mid:#6B6B6B;
-  --text-light:#A0A0A0;
-  --border:#E3D6C8;
-  --green:#8FB996;
-  --green-light:#d4edda;
-  --blue:#5B8DB8;
-  --purple:#9B8EC4;
-  --teal:#6BAFA6;
-  --rose:#C47A8A;
+  --bg:oklch(0.985 0.002 80);
+  --surface:#FFFFFF;
+  --surface-2:oklch(0.968 0.002 80);
+  --ink:oklch(0.23 0.012 260);
+  --ink-2:oklch(0.45 0.012 260);
+  --ink-3:oklch(0.56 0.01 260);
+  --border:oklch(0.915 0.004 80);
+  --border-strong:oklch(0.86 0.006 80);
+  --accent:oklch(0.62 0.145 55);
+  --accent-ink:oklch(0.52 0.13 55);
+  --accent-soft:oklch(0.96 0.02 55);
+  --green:oklch(0.62 0.1 155);
+  --warn-bg:oklch(0.96 0.03 85);
+  --warn-ink:oklch(0.45 0.09 75);
+  --danger:oklch(0.55 0.18 25);
+  /* z-scale */
+  --z-sticky:10; --z-tooltip:40;
 }
 
 *{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;}
 body{
-  font-family:'DM Sans',sans-serif;
-  background:var(--cream);
-  color:var(--text);
-  min-height:100vh;
+  font-family:'IBM Plex Sans',system-ui,-apple-system,sans-serif;
+  background:var(--bg);
+  color:var(--ink);
+  -webkit-font-smoothing:antialiased;
+  font-size:14px;
 }
+button{font-family:inherit;}
+iconify-icon{display:inline-block;vertical-align:-0.125em;}
 
 /* ── Header ── */
 .header{
   display:flex;
   align-items:center;
   justify-content:space-between;
-  padding:16px 32px;
+  padding:0 24px;
+  height:56px;
   border-bottom:1px solid var(--border);
-  background:white;
+  background:var(--surface);
 }
-.header-left{display:flex;align-items:center;gap:12px;}
-.header-logo{width:36px;height:36px;}
-.header-title{font-family:'Gaegu',cursive;font-size:1.4rem;font-weight:700;color:var(--text);}
-.header-subtitle{font-size:0.85rem;color:var(--text-mid);font-weight:500;}
+.header-left{display:flex;align-items:baseline;gap:10px;}
+.brand{
+  display:flex;align-items:center;gap:8px;
+  font-weight:650;font-size:0.95rem;letter-spacing:-0.01em;
+  color:var(--ink);text-decoration:none;
+}
+.brand iconify-icon{font-size:1.25rem;color:var(--accent);}
+.header-context{font-size:0.85rem;color:var(--ink-3);}
 .back-link{
-  font-size:0.85rem;
-  color:var(--orange);
-  text-decoration:none;
-  padding:6px 14px;
-  border:1px solid var(--orange-light);
-  border-radius:18px;
-  transition:background 0.2s;
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:0.82rem;font-weight:500;
+  color:var(--ink-2);text-decoration:none;
+  padding:6px 12px;border:1px solid var(--border);border-radius:8px;
+  background:var(--surface);
+  transition:border-color 0.15s, color 0.15s;
 }
-.back-link:hover{background:var(--orange-pale);}
+.back-link:hover{border-color:var(--border-strong);color:var(--ink);}
 
 /* ── Main layout ── */
 .content{
   display:grid;
-  grid-template-columns:320px 1fr 320px;
-  gap:0;
-  height:calc(100vh - 65px);
+  grid-template-columns:320px minmax(0,1fr) 300px;
+  height:calc(100vh - 57px);
 }
+.content > *{min-width:0;}
 
 /* ── Picks panel ── */
 .picks-panel{
   border-right:1px solid var(--border);
   overflow-y:auto;
-  background:white;
-  padding:20px;
+  background:var(--surface);
 }
 .picks-header{
   display:flex;
   align-items:center;
   justify-content:space-between;
-  margin-bottom:16px;
+  padding:18px 20px 12px;
+  position:sticky;top:0;
+  background:var(--surface);
+  z-index:var(--z-sticky);
 }
-.picks-title{font-size:1.1rem;font-weight:700;}
-.picks-count{font-size:0.78rem;color:var(--text-light);background:var(--cream-dark);padding:2px 10px;border-radius:12px;}
+.picks-title{font-size:0.85rem;font-weight:600;}
+.picks-count{font-size:0.75rem;color:var(--ink-3);font-variant-numeric:tabular-nums;}
+
+.picks-list{padding:0 12px 16px;}
 
 .pick-card{
-  border:1px solid var(--border);
-  border-radius:12px;
-  padding:14px 16px;
-  margin-bottom:10px;
+  border:1px solid transparent;
+  border-radius:10px;
+  padding:12px;
+  margin-bottom:2px;
   cursor:pointer;
-  transition:all 0.2s;
-  background:white;
-  border-left:3px solid transparent;
+  transition:background 0.15s, border-color 0.15s;
 }
-.pick-card:hover{background:var(--cream);border-color:var(--orange-light);border-left-color:var(--orange-light);}
+.pick-card:hover{background:var(--surface-2);}
 .pick-card.active{
-  background:var(--orange-pale);
-  border-color:var(--orange);
-  border-left-color:var(--orange);
-  box-shadow:0 2px 8px rgba(212,120,47,0.1);
+  background:var(--accent-soft);
+  border-color:oklch(0.88 0.05 55);
 }
 
-.pick-top{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
-.pick-team-logo{width:28px;height:28px;border-radius:50%;object-fit:contain;}
-.pick-player{font-weight:600;font-size:0.95rem;flex:1;}
-.pick-matchup{font-size:0.78rem;color:var(--text-mid);}
+.pick-top{display:flex;align-items:center;gap:10px;}
+.pick-team-logo{width:24px;height:24px;object-fit:contain;flex-shrink:0;}
+.pick-player{font-weight:600;font-size:0.86rem;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.pick-matchup{font-size:0.75rem;color:var(--ink-3);white-space:nowrap;}
 
-.pick-middle{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
-.prop-pill{
-  display:inline-block;
-  background:var(--orange-pale);
-  color:var(--orange);
-  padding:3px 10px;
-  border-radius:12px;
-  font-size:0.78rem;
-  font-weight:600;
+.pick-add-btn{
+  width:26px;height:26px;border-radius:7px;
+  border:1px solid var(--border);background:var(--surface);
+  cursor:pointer;display:inline-flex;align-items:center;justify-content:center;
+  font-size:0.9rem;color:var(--ink-3);
+  transition:border-color 0.15s, color 0.15s, background 0.15s;
+  flex-shrink:0;
+}
+.pick-add-btn:hover{border-color:var(--accent);color:var(--accent-ink);}
+.pick-add-btn.in-slip{border-color:var(--accent);background:var(--accent);color:white;}
+
+.pick-middle{display:flex;align-items:center;gap:10px;margin-top:8px;}
+.prop-label{
+  font-size:0.78rem;font-weight:600;color:var(--ink);
+  font-variant-numeric:tabular-nums;white-space:nowrap;
 }
 .b2b-badge{
-  display:inline-block;
-  background:#fff3cd;
-  color:#856404;
-  padding:2px 8px;
-  border-radius:10px;
-  font-size:0.7rem;
-  font-weight:500;
+  display:inline-flex;align-items:center;gap:3px;
+  color:var(--warn-ink);
+  font-size:0.7rem;font-weight:500;
 }
 
-.confidence-bar{flex:1;display:flex;align-items:center;gap:8px;}
+.confidence-bar{flex:1;display:flex;align-items:center;gap:8px;min-width:0;}
 .confidence-track{
   flex:1;
-  height:6px;
-  background:var(--cream-dark);
-  border-radius:3px;
+  height:3px;
+  background:var(--surface-2);
+  border-radius:2px;
   overflow:hidden;
 }
+.pick-card.active .confidence-track{background:oklch(0.9 0.03 55);}
 .confidence-fill{
   height:100%;
-  border-radius:3px;
-  background:linear-gradient(90deg, var(--orange-light), var(--orange));
-  transition:width 0.4s ease;
+  width:100%;
+  border-radius:2px;
+  background:var(--accent);
+  transform-origin:left;
+  transition:transform 0.3s cubic-bezier(0.25,1,0.5,1);
 }
-.confidence-pct{font-size:0.78rem;font-weight:600;color:var(--orange);min-width:36px;text-align:right;}
+.confidence-pct{
+  font-size:0.78rem;font-weight:600;color:var(--ink);
+  min-width:34px;text-align:right;font-variant-numeric:tabular-nums;
+}
 
-.pick-reasoning{font-size:0.8rem;color:var(--text-mid);line-height:1.45;margin-top:4px;}
+.pick-reasoning{
+  font-size:0.76rem;color:var(--ink-2);line-height:1.5;
+  margin-top:8px;
+  display:none;
+}
+.pick-card.active .pick-reasoning{display:block;}
 
 /* ── Graph panel ── */
 .graph-panel{
   display:flex;
   flex-direction:column;
   overflow:hidden;
-  background:var(--cream);
+  background:var(--bg);
 }
 .graph-header{
-  padding:20px 24px 12px;
+  padding:18px 24px 0;
   display:flex;
-  align-items:center;
+  align-items:baseline;
   justify-content:space-between;
+  gap:16px;
 }
-.graph-title{font-size:1.1rem;font-weight:700;}
-.graph-player-label{font-size:0.85rem;color:var(--text-mid);font-weight:500;}
+.graph-title{font-size:0.85rem;font-weight:600;}
+.graph-player-label{
+  font-size:0.82rem;color:var(--ink-2);font-weight:500;
+  font-variant-numeric:tabular-nums;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
 
 .graph-container{
   flex:1;
@@ -165,138 +194,118 @@ body{
   min-height:0;
   overflow:hidden;
 }
-#graphSvg{
-  width:100%;
-  height:100%;
-  display:block;
-  min-width:0;
-}
+#graphSvg{width:100%;height:100%;display:block;}
 
-/* D3 graph styles */
-.node-circle{cursor:pointer;transition:opacity 0.2s;}
-.node-circle:hover{opacity:1 !important;}
 .node-label{
-  font-family:'DM Sans',sans-serif;
-  fill:white;
+  font-family:'IBM Plex Sans',sans-serif;
   text-anchor:middle;
   pointer-events:none;
   font-weight:600;
 }
 .node-value{
-  font-family:'DM Sans',sans-serif;
-  fill:rgba(255,255,255,0.75);
+  font-family:'IBM Plex Sans',sans-serif;
   text-anchor:middle;
   pointer-events:none;
+  font-variant-numeric:tabular-nums;
 }
-.edge-line{fill:none;}
+.edge-path{fill:none;pointer-events:none;}
 
 /* Tooltip */
 .graph-tooltip{
   position:absolute;
-  background:white;
+  background:var(--surface);
   border:1px solid var(--border);
   border-radius:10px;
-  padding:10px 14px;
-  font-size:0.8rem;
-  box-shadow:0 4px 16px rgba(0,0,0,0.08);
+  padding:10px 12px;
+  font-size:0.78rem;
+  box-shadow:0 8px 24px oklch(0.2 0.01 260 / 0.08);
   pointer-events:none;
   opacity:0;
   transition:opacity 0.15s;
-  max-width:260px;
-  z-index:100;
+  max-width:250px;
+  z-index:var(--z-tooltip);
 }
 .graph-tooltip.visible{opacity:1;}
-.tooltip-label{font-weight:600;margin-bottom:4px;}
-.tooltip-score{color:var(--orange);font-weight:600;}
-.tooltip-detail{color:var(--text-mid);font-size:0.75rem;margin-top:4px;line-height:1.4;}
+.tooltip-label{font-weight:600;margin-bottom:2px;}
+.tooltip-meta{color:var(--ink-2);font-variant-numeric:tabular-nums;}
+.tooltip-detail{color:var(--ink-2);font-size:0.74rem;margin-top:6px;line-height:1.45;}
 
-/* ── Sliders panel ── */
+/* ── Weights panel ── */
 .sliders-panel{
-  padding:14px 24px 18px;
+  padding:14px 24px 16px;
   border-top:1px solid var(--border);
-  background:white;
-  overflow-x:auto;
+  background:var(--surface);
 }
 .sliders-header{
   display:flex;
   align-items:center;
   justify-content:space-between;
-  margin-bottom:10px;
+  margin-bottom:12px;
 }
-.sliders-title{font-size:0.85rem;font-weight:700;color:var(--text);}
+.sliders-title{font-size:0.78rem;font-weight:600;color:var(--ink-2);}
 .sliders-reset{
-  font-size:0.72rem;
-  color:var(--orange);
+  display:inline-flex;align-items:center;gap:4px;
+  font-size:0.74rem;
+  color:var(--ink-3);
   cursor:pointer;
-  border:none;
-  background:none;
-  font-family:'DM Sans',sans-serif;
-  font-weight:500;
-  padding:2px 8px;
-  border-radius:8px;
-  transition:background 0.15s;
+  border:none;background:none;font-weight:500;
+  padding:3px 8px;border-radius:6px;
+  transition:color 0.15s, background 0.15s;
 }
-.sliders-reset:hover{background:var(--orange-pale);}
+.sliders-reset:hover{color:var(--ink);background:var(--surface-2);}
 .sliders-grid{
   display:grid;
   grid-template-columns:repeat(4, 1fr);
-  gap:8px 16px;
+  gap:10px 20px;
 }
-.slider-item{display:flex;flex-direction:column;gap:3px;}
-.slider-top{display:flex;align-items:center;gap:5px;}
-.slider-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
-.slider-name{font-size:0.72rem;color:var(--text-mid);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.slider-val{font-size:0.72rem;font-weight:700;color:var(--text);min-width:24px;text-align:right;}
+.slider-item{display:flex;flex-direction:column;gap:4px;}
+.slider-top{display:flex;align-items:center;gap:6px;}
+.slider-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.slider-name{font-size:0.72rem;color:var(--ink-2);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.slider-val{font-size:0.72rem;font-weight:600;color:var(--ink);min-width:20px;text-align:right;font-variant-numeric:tabular-nums;}
 .slider-input{
   -webkit-appearance:none;
   appearance:none;
   width:100%;
-  height:4px;
+  height:3px;
   border-radius:2px;
-  background:var(--cream-dark);
+  background:var(--surface-2);
   outline:none;
   cursor:pointer;
 }
 .slider-input::-webkit-slider-thumb{
-  -webkit-appearance:none;
-  appearance:none;
-  width:14px;height:14px;
-  border-radius:50%;
-  background:var(--orange);
-  cursor:pointer;
-  border:2px solid white;
-  box-shadow:0 1px 3px rgba(0,0,0,0.15);
+  -webkit-appearance:none;appearance:none;
+  width:12px;height:12px;border-radius:50%;
+  background:var(--ink);cursor:pointer;
+  border:2px solid var(--surface);
+  box-shadow:0 0 0 1px var(--border-strong);
+  transition:background 0.15s;
 }
+.slider-input:focus-visible::-webkit-slider-thumb{background:var(--accent);}
 .slider-input::-moz-range-thumb{
-  width:14px;height:14px;
-  border-radius:50%;
-  background:var(--orange);
-  cursor:pointer;
-  border:2px solid white;
-  box-shadow:0 1px 3px rgba(0,0,0,0.15);
+  width:12px;height:12px;border-radius:50%;
+  background:var(--ink);cursor:pointer;
+  border:2px solid var(--surface);
+  box-shadow:0 0 0 1px var(--border-strong);
 }
-.slider-score{font-size:0.68rem;color:var(--text-light);text-align:right;}
 
-/* ── Loading ── */
-.loading-container{
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  height:100%;
-  gap:16px;
+/* ── Loading skeleton ── */
+.skeleton-panel{padding:18px 20px;}
+.skeleton{
+  border-radius:8px;
+  background:linear-gradient(90deg, var(--surface-2) 25%, oklch(0.945 0.002 80) 50%, var(--surface-2) 75%);
+  background-size:200% 100%;
+  animation:shimmer 1.4s ease-in-out infinite;
 }
-.loading-text{font-size:0.9rem;color:var(--text-mid);}
-
-@keyframes ballBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-18px)}}
-@keyframes shadowPulse{0%,100%{transform:scaleX(1);opacity:0.3}50%{transform:scaleX(0.6);opacity:0.15}}
-.ball-bounce{animation:ballBounce 0.6s ease-in-out infinite;}
-.ball-shadow{
-  width:24px;height:4px;
-  background:var(--text-light);
-  border-radius:50%;
-  margin-top:4px;
-  animation:shadowPulse 0.6s ease-in-out infinite;
+@keyframes shimmer{
+  0%{background-position:200% 0}
+  100%{background-position:-200% 0}
+}
+.skeleton-card{height:64px;margin-bottom:8px;}
+.skeleton-line{height:12px;margin-bottom:10px;}
+.skeleton-circle{border-radius:50%;}
+.skeleton-graph{
+  display:flex;align-items:center;justify-content:center;height:100%;
 }
 
 /* ── Empty state ── */
@@ -308,17 +317,27 @@ body{
   height:100%;
   text-align:center;
   padding:40px;
-  color:var(--text-mid);
+  color:var(--ink-2);
+  gap:6px;
 }
-.empty-state h3{font-size:1.1rem;margin-bottom:8px;color:var(--text);}
-.empty-state p{font-size:0.85rem;max-width:300px;}
+.empty-state iconify-icon{font-size:1.6rem;color:var(--ink-3);margin-bottom:6px;}
+.empty-state h3{font-size:0.95rem;font-weight:600;color:var(--ink);}
+.empty-state p{font-size:0.82rem;max-width:300px;line-height:1.5;}
+.empty-state button{
+  margin-top:12px;padding:7px 16px;
+  border:1px solid var(--border);border-radius:8px;
+  background:var(--surface);cursor:pointer;
+  font-size:0.82rem;font-weight:500;color:var(--ink);
+  transition:border-color 0.15s;
+}
+.empty-state button:hover{border-color:var(--border-strong);}
 
 /* ── Bet Slip panel ── */
 .betslip-panel{
   border-left:1px solid var(--border);
   overflow-y:auto;
-  background:white;
-  padding:20px;
+  background:var(--surface);
+  padding:18px 20px;
   display:flex;
   flex-direction:column;
 }
@@ -326,137 +345,121 @@ body{
   display:flex;
   align-items:center;
   justify-content:space-between;
-  margin-bottom:16px;
+  margin-bottom:14px;
 }
 .betslip-title-row{display:flex;align-items:center;gap:8px;}
-.betslip-title{font-size:1.1rem;font-weight:700;}
+.betslip-title{font-size:0.85rem;font-weight:600;}
 .betslip-badge{
-  font-size:0.7rem;font-weight:700;
-  background:var(--orange);color:white;
-  padding:2px 8px;border-radius:10px;
-  min-width:22px;text-align:center;
+  font-size:0.72rem;font-weight:600;
+  background:var(--ink);color:var(--surface);
+  padding:1px 7px;border-radius:99px;
+  min-width:20px;text-align:center;
+  font-variant-numeric:tabular-nums;
 }
 .betslip-clear{
-  font-size:0.78rem;color:var(--orange);
-  cursor:pointer;border:none;background:none;
-  font-family:'DM Sans',sans-serif;font-weight:500;
-  padding:4px 10px;border-radius:8px;
-  transition:background 0.15s;
+  font-size:0.74rem;color:var(--ink-3);
+  cursor:pointer;border:none;background:none;font-weight:500;
+  padding:3px 8px;border-radius:6px;
+  transition:color 0.15s, background 0.15s;
 }
-.betslip-clear:hover{background:var(--orange-pale);}
+.betslip-clear:hover{color:var(--ink);background:var(--surface-2);}
 
 .betslip-empty{
-  flex:1;display:flex;align-items:center;justify-content:center;
-  text-align:center;color:var(--text-light);font-size:0.85rem;
-  padding:24px;line-height:1.5;
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;color:var(--ink-3);font-size:0.8rem;
+  padding:24px;line-height:1.55;gap:8px;
 }
+.betslip-empty iconify-icon{font-size:1.4rem;}
 
 .slip-items{flex:1;overflow-y:auto;margin-bottom:12px;}
 .slip-card{
   display:flex;align-items:center;gap:10px;
-  padding:10px 12px;border:1px solid var(--border);
-  border-radius:10px;margin-bottom:8px;
-  background:var(--cream);transition:all 0.2s;
+  padding:10px 12px;
+  border:1px solid var(--border);
+  border-radius:10px;margin-bottom:6px;
+  background:var(--surface);
+  transition:border-color 0.15s;
 }
-.slip-card:hover{border-color:var(--orange-light);}
+.slip-card:hover{border-color:var(--border-strong);}
 .slip-info{flex:1;min-width:0;}
-.slip-player{font-weight:600;font-size:0.82rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.slip-prop{
-  display:inline-block;font-size:0.7rem;font-weight:600;
-  color:var(--orange);background:var(--orange-pale);
-  padding:2px 8px;border-radius:8px;margin-top:3px;
-}
-.slip-conf{
-  font-size:0.72rem;font-weight:600;color:var(--text-mid);
-  margin-top:2px;
-}
+.slip-player{font-weight:600;font-size:0.8rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.slip-prop{font-size:0.74rem;color:var(--ink-2);margin-top:2px;font-variant-numeric:tabular-nums;}
+.slip-conf{font-size:0.72rem;color:var(--ink-3);margin-top:1px;font-variant-numeric:tabular-nums;}
 .slip-remove{
-  width:24px;height:24px;border-radius:50%;
-  border:1px solid var(--border);background:white;
-  cursor:pointer;display:flex;align-items:center;justify-content:center;
-  font-size:0.8rem;color:var(--text-light);
-  transition:all 0.15s;flex-shrink:0;
+  width:24px;height:24px;border-radius:6px;
+  border:none;background:none;
+  cursor:pointer;display:inline-flex;align-items:center;justify-content:center;
+  font-size:0.85rem;color:var(--ink-3);
+  transition:color 0.15s, background 0.15s;flex-shrink:0;
 }
-.slip-remove:hover{background:#fdecea;color:#c0392b;border-color:#e6b0aa;}
+.slip-remove:hover{background:oklch(0.96 0.02 25);color:var(--danger);}
 
 /* Parlay summary */
 .parlay-summary{
   border-top:1px solid var(--border);
-  padding-top:14px;margin-top:4px;
+  padding-top:12px;margin-top:4px;
 }
 .parlay-row{
   display:flex;justify-content:space-between;align-items:center;
-  padding:4px 0;font-size:0.82rem;
+  padding:3px 0;font-size:0.8rem;
 }
-.parlay-label{color:var(--text-mid);}
-.parlay-value{font-weight:700;color:var(--text);}
-.parlay-value.highlight{color:var(--orange);font-size:0.95rem;}
+.parlay-label{color:var(--ink-2);}
+.parlay-value{font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;}
+.parlay-value.highlight{color:var(--accent-ink);}
 .parlay-warning{
-  font-size:0.72rem;color:#856404;
-  background:#fff3cd;padding:6px 10px;
-  border-radius:8px;margin-top:8px;line-height:1.4;
+  display:flex;gap:6px;align-items:flex-start;
+  font-size:0.72rem;color:var(--warn-ink);
+  background:var(--warn-bg);padding:8px 10px;
+  border-radius:8px;margin-top:10px;line-height:1.45;
 }
+.parlay-warning iconify-icon{flex-shrink:0;margin-top:1px;}
 
 /* Bankroll calculator */
 .bankroll-section{
   border-top:1px solid var(--border);
-  padding-top:14px;margin-top:14px;
+  padding-top:12px;margin-top:12px;
 }
-.bankroll-title{font-size:0.82rem;font-weight:700;margin-bottom:10px;}
+.bankroll-title{font-size:0.78rem;font-weight:600;margin-bottom:10px;color:var(--ink-2);}
 .bankroll-input-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
-.bankroll-input-row label{font-size:0.78rem;color:var(--text-mid);min-width:60px;}
+.bankroll-input-row label{font-size:0.76rem;color:var(--ink-2);min-width:56px;}
 .bankroll-input{
   flex:1;padding:7px 10px;
   border:1px solid var(--border);border-radius:8px;
-  font-family:'DM Sans',sans-serif;font-size:0.85rem;
-  outline:none;transition:border-color 0.2s;
-  background:var(--cream);
+  font-family:inherit;font-size:0.82rem;
+  outline:none;transition:border-color 0.15s, box-shadow 0.15s;
+  background:var(--surface);
+  color:var(--ink);
+  font-variant-numeric:tabular-nums;
 }
-.bankroll-input:focus{border-color:var(--orange);}
+.bankroll-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px oklch(0.62 0.145 55 / 0.12);}
 .bankroll-results{
-  background:var(--orange-pale);border-radius:10px;
-  padding:12px 14px;
+  background:var(--surface-2);border-radius:10px;
+  padding:10px 12px;
 }
 .bankroll-result-row{
   display:flex;justify-content:space-between;
-  padding:3px 0;font-size:0.82rem;
+  padding:3px 0;font-size:0.8rem;
 }
-.bankroll-result-label{color:var(--text-mid);}
-.bankroll-result-value{font-weight:700;color:var(--orange);}
-
-/* Add-to-slip button on pick cards */
-.pick-add-btn{
-  width:28px;height:28px;border-radius:50%;
-  border:1.5px solid var(--border);background:white;
-  cursor:pointer;display:flex;align-items:center;justify-content:center;
-  font-size:0.85rem;color:var(--text-light);
-  transition:all 0.15s;flex-shrink:0;
-}
-.pick-add-btn:hover{border-color:var(--orange);color:var(--orange);background:var(--orange-pale);}
-.pick-add-btn.in-slip{
-  border-color:var(--orange);background:var(--orange);color:white;
-}
+.bankroll-result-label{color:var(--ink-2);}
+.bankroll-result-value{font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;}
 
 /* ── Responsive ── */
 @media(max-width:900px){
   .content{
-    grid-template-columns:1fr;
-    grid-template-rows:auto 1fr auto;
+    grid-template-columns:minmax(0,1fr);
+    grid-template-rows:auto auto auto;
     height:auto;
   }
-  .picks-panel{
-    border-right:none;
-    border-bottom:1px solid var(--border);
-    max-height:45vh;
-  }
-  .graph-panel{min-height:55vh;}
-  .betslip-panel{
-    border-left:none;
-    border-top:1px solid var(--border);
-    max-height:50vh;
-  }
-  .header{padding:12px 16px;}
+  .picks-panel{border-right:none;border-bottom:1px solid var(--border);max-height:45vh;}
+  .graph-panel{min-height:60vh;}
+  .betslip-panel{border-left:none;border-top:1px solid var(--border);}
+  .header{padding:0 16px;}
+  .header-context{display:none;}
   .sliders-grid{grid-template-columns:repeat(2, 1fr);}
+}
+
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:0.01ms !important;transition-duration:0.01ms !important;}
 }
 </style>
 </head>
@@ -465,33 +468,36 @@ body{
 <!-- Header -->
 <header class="header">
   <div class="header-left">
-    <svg class="header-logo" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="60" cy="60" r="54" fill="#D4782F"/>
-      <path d="M14 40 Q60 20 106 40" stroke="#1a1a1a" stroke-width="2.5" fill="none"/>
-      <path d="M14 80 Q60 100 106 80" stroke="#1a1a1a" stroke-width="2.5" fill="none"/>
-      <line x1="60" y1="6" x2="60" y2="114" stroke="#1a1a1a" stroke-width="2.5"/>
-      <circle cx="60" cy="60" r="54" stroke="#1a1a1a" stroke-width="3" fill="none"/>
-    </svg>
-    <div>
-      <div class="header-title">Ball Don't Lie</div>
-      <div class="header-subtitle">Betting Picks</div>
-    </div>
+    <a href="/" class="brand">
+      <iconify-icon icon="tabler:ball-basketball"></iconify-icon>
+      Ball Don't Lie
+    </a>
+    <span class="header-context">Betting picks · calibrated model probabilities</span>
   </div>
-  <a href="/" class="back-link">Back to Chat</a>
+  <a href="/" class="back-link">
+    <iconify-icon icon="tabler:arrow-left"></iconify-icon>
+    Chat
+  </a>
 </header>
 
 <!-- Content -->
 <div class="content" id="content">
-  <div class="loading-container" id="loadingState" style="grid-column:1/-1;">
-    <svg class="ball-bounce" width="36" height="36" viewBox="0 0 120 120" fill="none">
-      <circle cx="60" cy="60" r="54" fill="#D4782F"/>
-      <path d="M14 40 Q60 20 106 40" stroke="#1a1a1a" stroke-width="2.5" fill="none"/>
-      <path d="M14 80 Q60 100 106 80" stroke="#1a1a1a" stroke-width="2.5" fill="none"/>
-      <line x1="60" y1="6" x2="60" y2="114" stroke="#1a1a1a" stroke-width="2.5"/>
-      <circle cx="60" cy="60" r="54" stroke="#1a1a1a" stroke-width="3" fill="none"/>
-    </svg>
-    <div class="ball-shadow"></div>
-    <div class="loading-text">Loading picks...</div>
+  <div class="picks-panel skeleton-panel">
+    <div class="skeleton skeleton-line" style="width:40%"></div>
+    <div class="skeleton skeleton-card"></div>
+    <div class="skeleton skeleton-card"></div>
+    <div class="skeleton skeleton-card"></div>
+    <div class="skeleton skeleton-card"></div>
+    <div class="skeleton skeleton-card"></div>
+  </div>
+  <div class="graph-panel">
+    <div class="skeleton-graph">
+      <div class="skeleton skeleton-circle" style="width:120px;height:120px"></div>
+    </div>
+  </div>
+  <div class="betslip-panel skeleton-panel">
+    <div class="skeleton skeleton-line" style="width:35%"></div>
+    <div class="skeleton skeleton-card" style="height:48px"></div>
   </div>
 </div>
 
@@ -500,15 +506,14 @@ body{
 
 <script>
 const CATEGORY_COLORS = {
-  center: '#D4782F',
-  historical: '#D4782F',
-  trend: '#E8A87C',
-  matchup: '#8FB996',
-  situational: '#A0A0A0',
-  derived: '#5B8DB8',
-  context: '#9B8EC4',
-  advanced: '#6BAFA6',
-  meta: '#C47A8A',
+  center: 'oklch(0.62 0.145 55)',       // accent — the one strong color
+  historical: '#6B7A99',
+  trend: '#C08552',
+  matchup: '#6E9B7B',
+  situational: '#8A8F98',
+  derived: '#7C89B8',
+  advanced: '#6FA8A0',
+  meta: '#A08CA8',
 };
 
 const content = document.getElementById('content');
@@ -519,6 +524,7 @@ let simulation = null;
 let rawApiData = null;
 let betSlip = []; // array of pick indices
 let bankroll = 1000;
+const REDUCED_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 // Adjustable weights (start with server defaults, user can tweak)
 // These drive the what-if slider view; the server confidence itself is a
@@ -546,6 +552,8 @@ const FACTOR_CATS = {
   minutes_trend:'advanced', opp_defense:'matchup', rest:'situational',
   home_away:'situational',
 };
+
+const PROP_LABELS = {'pts':'PTS','reb':'REB','ast':'AST','fg3m':'3PM','pra':'PRA'};
 
 function teamLogo(abbr) {
   const MAP = {
@@ -602,9 +610,10 @@ async function loadPicks() {
     console.error('Failed to load picks:', err);
     content.innerHTML = `
       <div class="empty-state" style="grid-column:1/-1;">
-        <h3>Something went wrong</h3>
-        <p>Could not load betting picks. Make sure the server is running.</p>
-        <button onclick="location.reload()" style="margin-top:16px;padding:8px 20px;border:1px solid var(--border);border-radius:18px;background:white;cursor:pointer;font-family:'DM Sans',sans-serif;">Retry</button>
+        <iconify-icon icon="tabler:plug-connected-x"></iconify-icon>
+        <h3>Couldn't load picks</h3>
+        <p>The picks service didn't respond. Make sure the server is running, then try again.</p>
+        <button onclick="location.reload()">Retry</button>
       </div>`;
   }
 }
@@ -614,8 +623,9 @@ function renderApp(data) {
   if (!currentPicks.length) {
     content.innerHTML = `
       <div class="empty-state" style="grid-column:1/-1;">
-        <h3>No picks available</h3>
-        <p>No games scheduled or no strong prop recommendations right now. Check back on game day!</p>
+        <iconify-icon icon="tabler:calendar-off"></iconify-icon>
+        <h3>No picks today</h3>
+        <p>No games scheduled or no props clear the model's 70% probability bar. Check back on game day.</p>
       </div>`;
     return;
   }
@@ -624,9 +634,9 @@ function renderApp(data) {
     <div class="picks-panel" id="picksPanel">
       <div class="picks-header">
         <span class="picks-title">Today's Picks</span>
-        <span class="picks-count">${currentPicks.length} picks</span>
+        <span class="picks-count">${currentPicks.length}</span>
       </div>
-      <div id="picksList"></div>
+      <div class="picks-list" id="picksList"></div>
     </div>
     <div class="graph-panel" id="graphPanel">
       <div class="graph-header">
@@ -638,8 +648,11 @@ function renderApp(data) {
       </div>
       <div class="sliders-panel" id="slidersPanel">
         <div class="sliders-header">
-          <span class="sliders-title">Adjust Factor Weights</span>
-          <button class="sliders-reset" onclick="resetWeights()">Reset</button>
+          <span class="sliders-title">Factor weights — what-if view</span>
+          <button class="sliders-reset" onclick="resetWeights()">
+            <iconify-icon icon="tabler:restore"></iconify-icon>
+            Reset
+          </button>
         </div>
         <div class="sliders-grid" id="slidersGrid"></div>
       </div>
@@ -658,20 +671,24 @@ function renderPicksList() {
   if (!list) return;
   list.innerHTML = currentPicks.map((pick, i) => {
     const conf = Math.round((pick._userConfidence ?? pick.confidence) * 100);
+    const inSlip = betSlip.includes(i);
     return `
     <div class="pick-card ${i === selectedIndex ? 'active' : ''}" data-index="${i}" onclick="selectPick(${i})">
       <div class="pick-top">
         <img class="pick-team-logo" src="${teamLogo(pick.team)}" alt="${escapeHtml(pick.team || '')}" onerror="this.style.display='none'">
         <span class="pick-player">${escapeHtml(pick.player_name)}</span>
-        <span class="pick-matchup">${pick.location === 'home' ? 'vs' : '@'} ${escapeHtml(pick.opponent || '?')}</span>
-        <button class="pick-add-btn ${betSlip.includes(i) ? 'in-slip' : ''}" onclick="event.stopPropagation();toggleSlip(${i})" title="${betSlip.includes(i) ? 'Remove from slip' : 'Add to slip'}">${betSlip.includes(i) ? '✓' : '+'}</button>
+        <span class="pick-matchup">${pick.opponent ? (pick.location === 'home' ? 'vs ' : '@ ') + escapeHtml(pick.opponent) : ''}</span>
+        <button class="pick-add-btn ${inSlip ? 'in-slip' : ''}" onclick="event.stopPropagation();toggleSlip(${i})"
+          title="${inSlip ? 'Remove from slip' : 'Add to slip'}" aria-label="${inSlip ? 'Remove from slip' : 'Add to slip'}">
+          <iconify-icon icon="${inSlip ? 'tabler:check' : 'tabler:plus'}"></iconify-icon>
+        </button>
       </div>
       <div class="pick-middle">
-        <span class="prop-pill">Over ${pick.line} ${({'pts':'PTS','reb':'REB','ast':'AST','fg3m':'3PM','pra':'PRA'}[pick.prop_type] || pick.prop_type)}</span>
-        ${pick.is_b2b ? '<span class="b2b-badge">B2B</span>' : ''}
+        <span class="prop-label">Over ${pick.line} ${PROP_LABELS[pick.prop_type] || pick.prop_type}</span>
+        ${pick.is_b2b ? '<span class="b2b-badge" title="Back-to-back game"><iconify-icon icon="tabler:zzz"></iconify-icon>B2B</span>' : ''}
         <div class="confidence-bar">
           <div class="confidence-track">
-            <div class="confidence-fill" style="width:${conf}%"></div>
+            <div class="confidence-fill" style="transform:scaleX(${conf / 100})"></div>
           </div>
           <span class="confidence-pct">${conf}%</span>
         </div>
@@ -685,12 +702,10 @@ function renderPicksList() {
 function renderSliders() {
   const grid = document.getElementById('slidersGrid');
   if (!grid) return;
-  const pick = currentPicks[selectedIndex] || currentPicks[0];
 
   grid.innerHTML = FACTOR_ORDER.map(key => {
     const w = userWeights[key];
     const color = CATEGORY_COLORS[FACTOR_CATS[key]] || '#ccc';
-    const score = pick ? (pick.factors[key]?.score || 0) : 0;
     return `
       <div class="slider-item">
         <div class="slider-top">
@@ -699,33 +714,31 @@ function renderSliders() {
           <span class="slider-val" id="sw_${key}">${Math.round(w * 100)}</span>
         </div>
         <input type="range" class="slider-input" min="0" max="50" value="${Math.round(w * 100)}"
-          data-key="${key}" oninput="onSliderChange(this)">
-        <div class="slider-score">Score: ${Math.round(score * 100)}%</div>
+          data-key="${key}" oninput="onSliderChange(this)" aria-label="${FACTOR_LABELS[key]} weight">
       </div>`;
   }).join('');
 }
 
 function onSliderChange(el) {
   const key = el.dataset.key;
-  const val = parseInt(el.value) / 100;
-  userWeights[key] = val;
-  document.getElementById('sw_' + key).textContent = el.value;
+  userWeights[key] = parseInt(el.value, 10) / 100;
+  const valEl = document.getElementById('sw_' + key);
+  if (valEl) valEl.textContent = el.value;
 
   recomputeAllPicks();
   renderPicksList();
   // Update graph in-place instead of full re-render (avoids freeze)
   if (selectedIndex >= 0 && currentPicks[selectedIndex]) {
     const pick = currentPicks[selectedIndex];
-    // Update confidence label in graph header
     const label = document.getElementById('graphPlayerLabel');
-    if (label) label.textContent = `${pick.player_name} — Over ${pick.line} ${({'pts':'PTS','reb':'REB','ast':'AST','fg3m':'3PM','pra':'PRA'}[pick.prop_type] || pick.prop_type)}`;
+    if (label) label.textContent = `${pick.player_name} — Over ${pick.line} ${PROP_LABELS[pick.prop_type] || pick.prop_type}`;
     renderGraph(pick);
   }
   updateBetSlipCalc();
 }
 
 function resetWeights() {
-  Object.assign(userWeights, DEFAULT_WEIGHTS);
+  userWeights = {...DEFAULT_WEIGHTS};
   recomputeAllPicks();
   renderPicksList();
   renderSliders();
@@ -741,19 +754,18 @@ function selectPick(index) {
   const pick = currentPicks[index];
   if (!pick) return;
 
-  document.querySelectorAll('.pick-card').forEach((el, i) => {
-    el.classList.toggle('active', i === index);
-  });
-
+  renderPicksList();
   const label = document.getElementById('graphPlayerLabel');
-  if (label) label.textContent = `${pick.player_name} \u2014 Over ${pick.line} ${({'pts':'PTS','reb':'REB','ast':'AST','fg3m':'3PM','pra':'PRA'}[pick.prop_type] || pick.prop_type)}`;
-
-  renderGraph(pick);
+  if (label) label.textContent = `${pick.player_name} — Over ${pick.line} ${PROP_LABELS[pick.prop_type] || pick.prop_type}`;
   renderSliders();
+  renderGraph(pick, {animate: true});
 }
 
-// ── D3 Force Graph (with extra nodes) ──
-function renderGraph(pick) {
+// ── Graph rendering ──
+// The layout is pre-computed off-screen (simulation.tick × 300), so the
+// graph appears settled — then nodes fade in with a light stagger.
+function renderGraph(pick, opts = {}) {
+  const animate = !!opts.animate && !REDUCED_MOTION;
   const container = document.getElementById('graphContainer');
   const svg = d3.select('#graphSvg');
   svg.selectAll('*').remove();
@@ -762,13 +774,11 @@ function renderGraph(pick) {
 
   const width = container.clientWidth;
   const height = container.clientHeight;
-
   svg.attr('viewBox', `0 0 ${width} ${height}`);
 
   const graphData = pick.graph;
   if (!graphData) return;
 
-  // Build combined nodes: real + extra
   const nodes = graphData.nodes.map(n => ({...n}));
 
   // Update confidence node with user-computed value
@@ -782,9 +792,7 @@ function renderGraph(pick) {
     }
   }
 
-  // Build combined edges
   const edges = graphData.edges.map(e => ({...e}));
-  // Update real factor->confidence edge weights from sliders
   for (const e of edges) {
     const srcId = typeof e.source === 'string' ? e.source : e.source.id;
     if (userWeights[srcId] !== undefined && (typeof e.target === 'string' ? e.target : e.target.id) === 'confidence') {
@@ -799,154 +807,195 @@ function renderGraph(pick) {
     return nodeIds.has(s) && nodeIds.has(t);
   });
 
-  // Scale node radius — large enough for labels to fit
-  const radiusScale = d3.scaleSqrt()
-    .domain([0, 1])
-    .range([36, 58]);
+  const CENTER_R = 54;
+  const radiusScale = d3.scaleSqrt().domain([0, 1]).range([26, 42]);
+  const nodeR = d => d.id === 'confidence' ? CENTER_R : radiusScale(d.weight);
+  const edgeWidth = d3.scaleLinear().domain([0, 0.6]).range([1, 2.5]).clamp(true);
 
-  const edgeScale = d3.scaleLinear()
-    .domain([0, 0.55])
-    .range([0.8, 7])
-    .clamp(true);
-
-  // Links
-  const linkG = svg.append('g');
-  const link = linkG.selectAll('line')
-    .data(validEdges)
-    .join('line')
-    .attr('class', 'edge-line')
-    .attr('stroke', 'var(--border)')
-    .attr('stroke-width', d => edgeScale(d.weight))
-    .attr('stroke-opacity', d => 0.12 + d.weight * 0.5);
-
-  // Node groups
-  const nodeG = svg.append('g');
-  const node = nodeG.selectAll('g')
-    .data(nodes)
-    .join('g')
-    .attr('cursor', 'pointer');
-
-  // Circles
-  node.append('circle')
-    .attr('class', 'node-circle')
-    .attr('r', d => d.id === 'confidence' ? 64 : radiusScale(d.weight))
-    .attr('fill', d => CATEGORY_COLORS[d.category] || '#bbb')
-    .attr('stroke', d => d.id === 'confidence' ? '#b35e1a' : 'rgba(255,255,255,0.6)')
-    .attr('stroke-width', d => d.id === 'confidence' ? 3.5 : 2)
-    .attr('opacity', d => d.id === 'confidence' ? 1 : 0.35 + 0.65 * d.value);
-
-  // Labels — always inside, white text
-  node.append('text')
-    .attr('class', 'node-label')
-    .attr('dy', d => d.id === 'confidence' ? '-0.1em' : '-0.15em')
-    .text(d => {
-      if (d.id === 'confidence') return Math.round(d.value * 100) + '%';
-      return d.label;
-    })
-    .style('font-size', d => {
-      if (d.id === 'confidence') return '20px';
-      const r = radiusScale(d.weight);
-      // Scale font so text fits: shorter labels get bigger font
-      const maxChars = d.label.length;
-      const fitSize = (r * 1.6) / Math.max(maxChars, 4);
-      return Math.max(9, Math.min(13, fitSize * 4.5)) + 'px';
-    })
-    .style('font-weight', d => d.id === 'confidence' ? '700' : '600');
-
-  // Score value below label
-  node.filter(d => d.id !== 'confidence')
-    .append('text')
-    .attr('class', 'node-value')
-    .attr('dy', '1em')
-    .text(d => Math.round(d.value * 100) + '%')
-    .style('font-size', d => Math.max(9, radiusScale(d.weight) * 0.3) + 'px');
-
-  // "Confidence" subtitle
-  node.filter(d => d.id === 'confidence')
-    .append('text')
-    .attr('class', 'node-value')
-    .attr('dy', '1.3em')
-    .text('Confidence')
-    .style('font-size', '10px');
-
-  // Force simulation — scale spread to fill available space
+  // ── Pre-compute layout: run the simulation to convergence off-screen ──
   const area = width * height;
-  const scaleFactor = Math.sqrt(area / (800 * 600));  // normalize to reference size
-  const baseDist = 160 * scaleFactor;
+  const scaleFactor = Math.sqrt(area / (800 * 600));
+  const baseDist = 150 * scaleFactor;
 
   simulation = d3.forceSimulation(nodes)
     .force('link', d3.forceLink(validEdges).id(d => d.id).distance(d => {
       const s = d.source.id || d.source;
       const t = d.target.id || d.target;
-      if (s === 'confidence' || t === 'confidence') return baseDist * 1.4;
-      return baseDist * (0.7 + (1 - d.weight) * 0.5);
+      if (s === 'confidence' || t === 'confidence') return baseDist * 1.35;
+      return baseDist * (0.65 + (1 - d.weight) * 0.5);
     }).strength(d => 0.12 + d.weight * 0.2))
-    .force('charge', d3.forceManyBody().strength(-600 * scaleFactor))
+    .force('charge', d3.forceManyBody().strength(-560 * scaleFactor))
     .force('center', d3.forceCenter(width / 2, height / 2))
-    .force('collision', d3.forceCollide().radius(d => (d.id === 'confidence' ? 70 : radiusScale(d.weight)) + 16))
-    .on('tick', () => {
-      link
-        .attr('x1', d => d.source.x)
-        .attr('y1', d => d.source.y)
-        .attr('x2', d => d.target.x)
-        .attr('y2', d => d.target.y);
+    .force('collision', d3.forceCollide().radius(d => nodeR(d) + 18))
+    .stop();
 
-      node.attr('transform', d => {
-        d.x = Math.max(70, Math.min(width - 70, d.x));
-        d.y = Math.max(70, Math.min(height - 70, d.y));
-        return `translate(${d.x},${d.y})`;
+  // Pin the confidence node to the center for a stable composition
+  if (confNode) { confNode.fx = width / 2; confNode.fy = height / 2; }
+  simulation.tick(300);
+
+  const clampNode = d => {
+    const r = nodeR(d) + 10;
+    d.x = Math.max(r, Math.min(width - r, d.x));
+    d.y = Math.max(r, Math.min(height - r, d.y));
+  };
+  nodes.forEach(clampNode);
+
+  // ── Curved edges ──
+  const edgePath = d => {
+    const sx = d.source.x, sy = d.source.y, tx = d.target.x, ty = d.target.y;
+    const dx = tx - sx, dy = ty - sy;
+    const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+    // Perpendicular offset for a gentle arc
+    const off = dist * 0.12;
+    const mx = (sx + tx) / 2 - (dy / dist) * off;
+    const my = (sy + ty) / 2 + (dx / dist) * off;
+    return `M${sx},${sy} Q${mx},${my} ${tx},${ty}`;
+  };
+
+  const linkG = svg.append('g');
+  const link = linkG.selectAll('path')
+    .data(validEdges)
+    .join('path')
+    .attr('class', 'edge-path')
+    .attr('d', edgePath)
+    .attr('stroke', 'oklch(0.45 0.012 260)')
+    .attr('stroke-width', d => edgeWidth(d.weight))
+    .attr('stroke-opacity', animate ? 0 : d => 0.07 + d.weight * 0.22)
+    .attr('stroke-linecap', 'round');
+
+  // ── Nodes ──
+  const nodeG = svg.append('g');
+  const node = nodeG.selectAll('g')
+    .data(nodes)
+    .join('g')
+    .attr('cursor', 'pointer')
+    .attr('transform', d => `translate(${d.x},${d.y})`);
+
+  const isCenter = d => d.id === 'confidence';
+
+  // Base circle: white with hairline stroke; center node is the accent moment
+  node.append('circle')
+    .attr('class', 'node-base')
+    .attr('r', nodeR)
+    .attr('fill', d => isCenter(d) ? CATEGORY_COLORS.center : 'white')
+    .attr('stroke', d => isCenter(d) ? 'none' : 'oklch(0.9 0.005 80)')
+    .attr('stroke-width', 1);
+
+  // Score ring: an arc around the node showing the factor score
+  const ringArc = (d, v) => d3.arc()
+    .innerRadius(nodeR(d) + 2.5)
+    .outerRadius(nodeR(d) + 5)
+    .startAngle(0)
+    .cornerRadius(2)
+    .endAngle(v * 2 * Math.PI)();
+
+  node.filter(d => !isCenter(d))
+    .append('path')
+    .attr('class', 'node-ring')
+    .attr('fill', d => CATEGORY_COLORS[d.category] || '#8A8F98')
+    .attr('fill-opacity', 0.85)
+    .attr('d', d => ringArc(d, animate ? 0.0001 : d.value));
+
+  // Faint full track behind the ring
+  node.filter(d => !isCenter(d))
+    .insert('path', '.node-ring')
+    .attr('fill', 'oklch(0.93 0.003 80)')
+    .attr('d', d => ringArc(d, 1));
+
+  // Labels
+  node.append('text')
+    .attr('class', 'node-label')
+    .attr('dy', d => isCenter(d) ? '-0.35em' : '-0.15em')
+    .attr('fill', d => isCenter(d) ? 'white' : 'oklch(0.3 0.012 260)')
+    .style('font-size', d => isCenter(d) ? '13px' : Math.max(9, nodeR(d) * 0.26) + 'px')
+    .text(d => d.label);
+
+  node.append('text')
+    .attr('class', 'node-value')
+    .attr('dy', '1.05em')
+    .attr('fill', d => isCenter(d) ? 'rgba(255,255,255,0.85)' : 'oklch(0.5 0.01 260)')
+    .style('font-size', d => isCenter(d) ? '15px' : Math.max(9, nodeR(d) * 0.26) + 'px')
+    .style('font-weight', d => isCenter(d) ? 700 : 500)
+    .text(d => Math.round(d.value * 100) + '%');
+
+  // ── Entrance: settled layout fades in — no chaotic re-flow ──
+  if (animate) {
+    node.attr('opacity', 0)
+      .transition()
+      .duration(340)
+      .delay((d, i) => isCenter(d) ? 0 : 60 + i * 28)
+      .ease(d3.easeCubicOut)
+      .attr('opacity', 1);
+
+    node.selectAll('.node-ring')
+      .transition()
+      .duration(560)
+      .delay((d, i) => 180 + i * 28)
+      .ease(d3.easeCubicOut)
+      .attrTween('d', function(d) {
+        const interp = d3.interpolate(0.0001, d.value);
+        return t => ringArc(d, interp(t));
       });
-    });
 
-  // Drag
+    link.transition()
+      .duration(420)
+      .delay(240)
+      .ease(d3.easeCubicOut)
+      .attr('stroke-opacity', d => 0.07 + d.weight * 0.22);
+  } else {
+    node.attr('opacity', 1);
+  }
+
+  // ── Drag (gentle: simulation resumes at low energy) ──
   const drag = d3.drag()
     .on('start', (event, d) => {
-      if (!event.active) simulation.alphaTarget(0.3).restart();
+      simulation.alphaTarget(0.12).restart();
       d.fx = d.x; d.fy = d.y;
     })
     .on('drag', (event, d) => { d.fx = event.x; d.fy = event.y; })
     .on('end', (event, d) => {
-      if (!event.active) simulation.alphaTarget(0);
-      d.fx = null; d.fy = null;
+      simulation.alphaTarget(0);
+      if (!isCenter(d)) { d.fx = null; d.fy = null; }
     });
+
+  simulation.on('tick', () => {
+    nodes.forEach(clampNode);
+    link.attr('d', edgePath);
+    node.attr('transform', d => `translate(${d.x},${d.y})`);
+  });
 
   node.call(drag);
 
-  // Hover tooltips
+  // ── Hover: tooltip + connection highlighting ──
   node.on('mouseenter', (event, d) => {
     const rect = container.getBoundingClientRect();
-    const wPct = d.weight !== undefined ? Math.round(d.weight * 100) + '%' : 'N/A';
+    const wPct = d.weight !== undefined ? Math.round(d.weight * 100) + '%' : '–';
     tooltip.innerHTML = `
       <div class="tooltip-label">${escapeHtml(d.label)}</div>
-      <div class="tooltip-score">Score: ${Math.round(d.value * 100)}%</div>
-      <div>Weight: ${wPct}</div>
+      <div class="tooltip-meta">Score ${Math.round(d.value * 100)}% · Weight ${wPct}</div>
       <div class="tooltip-detail">${escapeHtml(d.detail)}</div>
     `;
     tooltip.classList.add('visible');
     tooltip.style.left = (event.clientX - rect.left + 14) + 'px';
     tooltip.style.top = (event.clientY - rect.top - 12) + 'px';
 
-    // Highlight connected edges
-    link.attr('stroke', l => {
-      const ls = l.source.id, lt = l.target.id;
-      if (ls === d.id || lt === d.id) return CATEGORY_COLORS[d.category] || '#D4782F';
-      return 'var(--border)';
-    }).attr('stroke-opacity', l => {
-      const ls = l.source.id, lt = l.target.id;
-      return (ls === d.id || lt === d.id) ? 0.75 : 0.08;
-    });
+    link
+      .attr('stroke', l => {
+        const ls = l.source.id, lt = l.target.id;
+        return (ls === d.id || lt === d.id) ? (CATEGORY_COLORS[d.category] || CATEGORY_COLORS.center) : 'oklch(0.45 0.012 260)';
+      })
+      .attr('stroke-opacity', l => {
+        const ls = l.source.id, lt = l.target.id;
+        return (ls === d.id || lt === d.id) ? 0.6 : 0.04;
+      });
 
-    // Dim unconnected nodes
-    const connectedIds = new Set();
-    connectedIds.add(d.id);
+    const connectedIds = new Set([d.id]);
     validEdges.forEach(e => {
       const s = e.source.id || e.source, t = e.target.id || e.target;
       if (s === d.id) connectedIds.add(t);
       if (t === d.id) connectedIds.add(s);
     });
-    node.select('circle').attr('opacity', n =>
-      connectedIds.has(n.id) ? (n.id === 'confidence' ? 1 : 0.35 + 0.65 * n.value) : 0.12
-    );
+    node.attr('opacity', n => connectedIds.has(n.id) ? 1 : 0.25);
   })
   .on('mousemove', (event) => {
     const rect = container.getBoundingClientRect();
@@ -955,11 +1004,10 @@ function renderGraph(pick) {
   })
   .on('mouseleave', () => {
     tooltip.classList.remove('visible');
-    link.attr('stroke', 'var(--border)')
-      .attr('stroke-opacity', d => 0.12 + d.weight * 0.5);
-    node.select('circle').attr('opacity', d =>
-      d.id === 'confidence' ? 1 : 0.35 + 0.65 * d.value
-    );
+    link
+      .attr('stroke', 'oklch(0.45 0.012 260)')
+      .attr('stroke-opacity', d => 0.07 + d.weight * 0.22);
+    node.attr('opacity', 1);
   });
 }
 
@@ -1074,7 +1122,8 @@ function renderBetSlip() {
         </div>
       </div>
       <div class="betslip-empty">
-        Click the <strong>+</strong> button on any pick to add it to your bet slip and build a parlay.
+        <iconify-icon icon="tabler:receipt"></iconify-icon>
+        <span>Add picks with <iconify-icon icon="tabler:plus"></iconify-icon> to build a straight bet or parlay.</span>
       </div>`;
     return;
   }
@@ -1099,21 +1148,23 @@ function renderBetSlip() {
         <span class="betslip-title">Bet Slip</span>
         <span class="betslip-badge">${betSlip.length}</span>
       </div>
-      <button class="betslip-clear" onclick="clearSlip()">Clear All</button>
+      <button class="betslip-clear" onclick="clearSlip()">Clear all</button>
     </div>
     <div class="slip-items">
       ${betSlip.map(i => {
         const p = currentPicks[i];
         const conf = Math.round((p._userConfidence ?? p.confidence) * 100);
-        const propLabel = ({'pts':'PTS','reb':'REB','ast':'AST','fg3m':'3PM','pra':'PRA'}[p.prop_type] || p.prop_type);
+        const propLabel = PROP_LABELS[p.prop_type] || p.prop_type;
         return `
           <div class="slip-card">
             <div class="slip-info">
               <div class="slip-player">${escapeHtml(p.player_name)}</div>
-              <span class="slip-prop">Over ${p.line} ${propLabel}</span>
-              <div class="slip-conf">${conf}% confidence</div>
+              <div class="slip-prop">Over ${p.line} ${propLabel}</div>
+              <div class="slip-conf">${conf}% probability</div>
             </div>
-            <button class="slip-remove" onclick="removeFromSlip(${i})" title="Remove">✕</button>
+            <button class="slip-remove" onclick="removeFromSlip(${i})" title="Remove" aria-label="Remove from slip">
+              <iconify-icon icon="tabler:x"></iconify-icon>
+            </button>
           </div>`;
       }).join('')}
     </div>
@@ -1123,19 +1174,19 @@ function renderBetSlip() {
         <span class="parlay-value">${isSingle ? 'Straight' : betSlip.length + '-Leg Parlay'}</span>
       </div>
       <div class="parlay-row">
-        <span class="parlay-label">${isSingle ? 'Confidence' : 'Combined Confidence'}</span>
+        <span class="parlay-label">${isSingle ? 'Probability' : 'Combined Probability'}</span>
         <span class="parlay-value">${(displayConf * 100).toFixed(1)}%</span>
       </div>
       <div class="parlay-row">
         <span class="parlay-label">Implied Odds</span>
         <span class="parlay-value highlight">${displayOdds}</span>
       </div>
-      ${warning ? `<div class="parlay-warning">⚠ ${warning}</div>` : ''}
+      ${warning ? `<div class="parlay-warning"><iconify-icon icon="tabler:alert-triangle"></iconify-icon><span>${warning}</span></div>` : ''}
     </div>
     <div class="bankroll-section">
       <div class="bankroll-title">Bet Size Calculator</div>
       <div class="bankroll-input-row">
-        <label>Bankroll</label>
+        <label for="bankrollInput">Bankroll</label>
         <input type="number" class="bankroll-input" id="bankrollInput" value="${bankroll}" min="0" step="100"
           oninput="onBankrollChange(this.value)" placeholder="Enter bankroll...">
       </div>
