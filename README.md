@@ -6,7 +6,8 @@ An AI-powered NBA assistant that answers stats questions via text-to-SQL, retrie
 
 - **Stats Q&A** — Ask natural language questions about NBA statistics. The system generates SQL, executes it, and returns a formatted answer.
 - **News RAG** — Ingests NBA news from RSS feeds, chunks and embeds articles with pgvector, and retrieves relevant context to answer news questions.
-- **Betting Analysis** — Analyzes player prop bets using hit-rate tables, home/away splits, and opponent defensive ratings.
+- **Betting Analysis** — A calibrated probabilistic prediction engine prices player props: recency-weighted mean projection, variance modeling, opponent/venue/rest adjustments, shrinkage, and Platt calibration. Validated with a walk-forward backtest over 880k+ historical predictions (Brier 0.153 on held-out seasons; see `docs/BACKTEST.md`).
+- **Backtesting** — `python backtest.py --seasons 2023-24,2024-25` replays history with zero lookahead leakage and reports Brier score, log loss, calibration tables, and simulated ROI.
 - **Game Previews** — Click a live-score chip or ask for a matchup to get an AI-generated preview with key stats and storylines.
 - **Live Scores** — Displays today's NBA scores (or upcoming games) in a ticker that refreshes every 60 seconds.
 - **Headlines Ticker** — Shows the 5 most recent NBA headlines pulled from RSS feeds.

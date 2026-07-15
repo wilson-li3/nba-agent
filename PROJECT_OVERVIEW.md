@@ -20,7 +20,7 @@ User Question
     ├─ STATS   → Text-to-SQL → execute query → format results in natural language
     ├─ NEWS    → Embed question → pgvector similarity search → summarize with citations
     ├─ MIXED   → run STATS + NEWS in parallel → combine answers
-    ├─ BETTING → parse intent → 6+ parallel DB queries → weighted factor scoring
+    ├─ BETTING → parse intent → 6+ parallel DB queries + calibrated engine probability → analyst-grade synthesis
     └─ OFF_TOPIC → polite rejection
 ```
 
@@ -36,7 +36,9 @@ User Question
 | `app/services/stats_service.py` | **Text-to-SQL pipeline.** Takes a natural language question, generates SQL via GPT-4o, executes it against PostgreSQL, and formats the result. Has error recovery — if the SQL fails, it asks the LLM to fix it. |
 | `app/services/news_service.py` | **RAG pipeline.** Embeds the question, runs pgvector similarity search on news chunks, returns summarized answer with source citations. |
 | `app/services/betting_service.py` | **Conversational betting analysis.** Parses betting intent (prop check, find picks, parlay, game preview), builds and runs 6+ parallel queries, synthesizes with GPT-4o. |
-| `app/services/betting_picks_service.py` | **Structured picks engine (no LLM).** Pure computation — scores every player prop using 8 weighted factors, returns structured JSON with graph data for D3 visualization. |
+| `app/services/betting_picks_service.py` | **Structured picks service (no LLM).** Runs the prediction engine over every eligible player, returns calibrated picks with factor attribution and D3 graph data. |
+| `app/services/prediction_engine.py` | **The prediction engine.** Pure-computation probabilistic model: EWMA mean projection, variance model, context adjustments, shrinkage, Platt calibration. Same code path in the live API and the backtest. |
+| `backtest.py` | **Walk-forward backtester.** Replays four seasons with zero lookahead leakage; reports Brier score, log loss, calibration tables, simulated ROI. |
 
 ### Prompts (LLM instructions)
 
@@ -81,41 +83,32 @@ User Question
 
 ---
 
-## The Betting Engine — How It Works
+## The Prediction Engine — How It Works
 
 ### Overview
 
-The betting picks page (`/betting/picks`) uses a **pure computation scoring engine** — no LLM calls. It queries the materialized views, scores every candidate prop across 8 factors, and returns structured JSON that the frontend visualizes.
+The betting picks page (`/betting/picks`) is powered by a **calibrated probabilistic prediction engine** (`app/services/prediction_engine.py`) — pure computation, no LLM calls. The confidence number on every pick is a real probability claim: *of all props the engine prices at 75%, about 75% actually hit* — verified by a walk-forward backtest over four seasons (see `docs/BACKTEST.md`).
 
-### The 8 Factors
+### The Model (7 layers)
 
-Each player prop is scored 0–1 on these factors:
+1. **Mean projection** — EWMA of the stat (half-life 8 games) blended 70/15/15 with the last-20 and season averages.
+2. **Minutes trend** — a damped multiplier from recent vs established minutes, so role changes move the forecast before averages catch up.
+3. **Context adjustments** — opponent defense (stat allowed vs league average, to-date), home/away, back-to-back penalty. All damped: matchup effects are worth a few percent, not 30%.
+4. **Variance projection** — the player's recent standard deviation shrunk toward a league variance model (`sd ≈ a + b·μ^p`, per stat).
+5. **Probability** — continuity-corrected normal CDF gives P(stat ≥ line).
+6. **Shrinkage blend** — the empirical L20 hit rate is blended in with pseudo-count weighting (k=70), so a hot 9/10 streak doesn't read as "90%".
+7. **Platt calibration** — a logistic recalibration fit on 2021-22 + 2022-23 walk-forward predictions corrects residual bias.
 
-| Factor | Weight | What It Measures | How It's Scored |
-|--------|--------|-----------------|-----------------|
-| **Hit Rate L10** | 30% | How often the player hit this line in last 10 games | `games_hit / 10` — e.g., 8/10 = 0.80 |
-| **Hit Rate L20** | 15% | Same but last 20 games (more stable sample) | `games_hit / 20` |
-| **Trend** | 15% | Is the player trending up or down? | Compares last 5 game avg vs season avg. If L5 > season, score > 0.5 |
-| **Consistency** | 10% | How reliable is this player? | Inverse of coefficient of variation: `1 - (stddev / avg)`. Low variance = high score |
-| **Matchup** | 10% | How does this player do vs this specific opponent? | Historical avg vs this opponent, compared to their overall avg |
-| **Home/Away** | 8% | Home court advantage | Compares home PPG vs away PPG for the game's location |
-| **Opp Defense** | 7% | How bad is the opponent's defense? | Percentile rank of opponent's points allowed. Worst defense = 1.0 |
-| **Rest (B2B)** | 5% | Is the player on a back-to-back? | 0.35 if B2B (fatigue penalty), 0.65 if rested |
+### Validation (held-out 2023-24 + 2024-25, 530k predictions)
 
-### Confidence Score
-
-```
-confidence = Σ (factor_score × factor_weight)
-```
-
-All 8 weights sum to 1.0. The frontend lets users adjust these weights with sliders and see confidence recalculate in real-time.
+- **Brier score 0.153** on threshold props (0.25 = coin-flipping)
+- Every calibration bucket within **±0.016** of its predicted rate
+- High-confidence buckets err conservative (actual ≥ predicted)
+- Reproduce: `python backtest.py --seasons 2023-24,2024-25`
 
 ### Filtering
 
-Only shows picks where:
-- The player's team plays today
-- Hit rate (L10) ≥ 70%
-- Confidence ≥ 65%
+Only shows picks where the player's team plays today (when there are games), the player has 10+ games and ~15+ projected minutes, and the calibrated probability ≥ 70%. Top 12 by probability.
 
 ---
 
@@ -127,13 +120,10 @@ The graph is an **interactive force-directed network** that visualizes how each 
 
 ### Node Types
 
-**9 Real Nodes** (from actual data):
-- 1 **Confidence node** (center, large, orange) — the final weighted score
-- 8 **Factor nodes** — one per scoring factor (Hit Rate L10, Trend, Matchup, etc.)
-
-**10 Decorative Nodes** (for visual richness):
-- Usage Rate, Minutes, Floor/Ceiling, Pace Factor, Injury Signal, Line Movement, Correlation, Recency Bias, Clutch Factor, Venue Effect
-- These have pseudo-random values seeded by the pick's data — they make the graph look more like a real analytics network
+**Every node is a real quantity from the model** (no decorative filler):
+- 1 **Probability node** (center, large, orange) — the calibrated probability
+- 7 **Factor nodes** — Recent Form, Hit Rate L20, Volatility, Minutes Trend, Opp Defense, Rest, Home/Away
+- 2 **Derived nodes** — Projection (the distribution model's μ ± σ vs the line) and Calibration (raw blend → calibrated probability)
 
 ### Visual Encoding
 
@@ -165,7 +155,7 @@ The simulation scales to fill available space: `scaleFactor = √(containerArea 
 
 ### Edge Connections
 
-Real edges connect each factor → confidence node (weight = slider weight). Extra edges connect decorative nodes to real factors and each other, creating a dense network appearance. Example: "Pace Factor" connects to "Opp Defense" and "Usage Rate" because pace affects both.
+Each factor connects to the probability node (weight = slider weight). Structural edges mirror the model's actual dataflow: form/minutes/volatility feed the Projection node, Projection and the empirical hit rate feed Calibration, and Calibration feeds the final probability.
 
 ---
 
@@ -188,10 +178,14 @@ Real edges connect each factor → confidence node (weight = slider weight). Ext
 
 ## Key Technical Highlights for Demo
 
-1. **Text-to-SQL with error recovery** — if the generated SQL fails, the system asks GPT-4o to fix it based on the error message and retries
-2. **Parallel execution everywhere** — `asyncio.gather` runs 6+ database queries simultaneously for betting analysis
-3. **RAG with recency boost** — news search uses pgvector cosine similarity but boosts recent articles
-4. **No LLM for picks** — the structured picks engine is pure math, making it fast and deterministic
-5. **Interactive weight adjustment** — users can tune the 8-factor weights and see confidence recalculate instantly
-6. **Safety** — SQL queries run in read-only transactions with 15s timeouts; INSERT/UPDATE/DELETE/DROP are blocked at the application level
-7. **Auto-refresh** — news syncs every 15 minutes, scores refresh every 60 seconds
+1. **Backtested, calibrated predictions** — the prop engine's probabilities were validated walk-forward on 530k held-out predictions (Brier 0.153, every calibration bucket within ±0.016); `backtest.py` reproduces it in seconds
+2. **Strict no-leakage design** — the backtester computes every input (defense ratings, league averages, splits) only from data available before each game's tip-off
+3. **Same code live and in backtest** — the engine is pure computation with no I/O, so the picks API and the backtest exercise the identical code path
+4. **Text-to-SQL with error recovery** — if the generated SQL fails, the system asks GPT-4o to fix it based on the error message and retries
+5. **Parallel execution everywhere** — `asyncio.gather` runs 6+ database queries simultaneously for betting analysis
+6. **RAG with recency boost** — news search uses pgvector cosine similarity but boosts recent articles
+7. **No LLM for picks, LLM informed by the model for chat** — the picks engine is deterministic math; the chat pipeline injects the engine's calibrated probability so GPT-4o's betting answers quote a validated model instead of eyeballing hit rates
+8. **Safety** — SQL queries run in read-only transactions with 15s timeouts; INSERT/UPDATE/DELETE/DROP are blocked at the application level
+9. **Auto-refresh** — news syncs every 15 minutes, scores refresh every 60 seconds
+
+See `docs/INTERVIEW_GUIDE.md` for full interview talking points and `docs/BACKTEST.md` for methodology and results.
