@@ -35,9 +35,9 @@ from dataclasses import dataclass, field
 ENGINE_PARAMS = {
     # Mean projection blend
     "ewma_halflife": 8.0,       # games
-    "w_ewma": 0.55,             # weight on EWMA
-    "w_l20": 0.25,              # weight on last-20 average
-    "w_season": 0.20,           # weight on season-to-date average
+    "w_ewma": 0.70,             # weight on EWMA
+    "w_l20": 0.15,              # weight on last-20 average
+    "w_season": 0.15,           # weight on season-to-date average
     # Minutes trend damping (0 = ignore minutes trend, 1 = fully scale)
     "minutes_damp": 0.50,
     # Context multiplier damping
@@ -49,13 +49,16 @@ ENGINE_PARAMS = {
     "var_a": 1.0,
     "var_b": 1.25,
     "var_pow": 0.62,
-    "w_emp_sd": 0.55,           # weight on player's empirical sd
+    "w_emp_sd": 0.15,           # weight on player's empirical sd
     "sd_floor": 1.0,
     # Empirical hit-rate blending: pseudo-count weight on the model prob
-    "hit_rate_k": 14.0,
+    "hit_rate_k": 70.0,
     # Calibration: p' = sigmoid(cal_a + cal_b * logit(p))
-    "cal_a": 0.0,
-    "cal_b": 1.0,
+    # Fit on 2021-22 + 2022-23 walk-forward predictions (thresholds+market),
+    # validated out-of-sample on 2023-24 + 2024-25 (530k predictions,
+    # Brier 0.180, every calibration bucket within ±0.016). See docs/BACKTEST.md.
+    "cal_a": -0.1128,
+    "cal_b": 1.1427,
     # Eligibility
     "min_games": 10,
     "min_minutes": 15.0,
