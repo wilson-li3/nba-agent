@@ -1210,6 +1210,26 @@ function renderBetSlip() {
     </div>`;
 }
 
+// ── Keyboard navigation: ↑/↓ move between picks, Enter toggles slip ──
+document.addEventListener('keydown', (e) => {
+  if (!currentPicks.length) return;
+  const tag = (document.activeElement?.tagName || '').toLowerCase();
+  if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    e.preventDefault();
+    const dir = e.key === 'ArrowDown' ? 1 : -1;
+    const next = Math.max(0, Math.min(currentPicks.length - 1, (selectedIndex < 0 ? 0 : selectedIndex + dir)));
+    if (next !== selectedIndex) {
+      selectPick(next);
+      document.querySelector(`.pick-card[data-index="${next}"]`)?.scrollIntoView({block: 'nearest'});
+    }
+  } else if (e.key === 'Enter' && selectedIndex >= 0) {
+    e.preventDefault();
+    toggleSlip(selectedIndex);
+  }
+});
+
 // ── Resize handler ──
 let resizeTimer;
 window.addEventListener('resize', () => {
