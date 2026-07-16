@@ -598,6 +598,15 @@ fetchHeadlines();
 fetchScores();
 setInterval(fetchScores, 60000);
 
+// "/" focuses the question input from anywhere
+document.addEventListener('keydown', (e) => {
+  const tag = (document.activeElement?.tagName || '').toLowerCase();
+  if (e.key === '/' && tag !== 'input' && tag !== 'textarea') {
+    e.preventDefault();
+    input.focus();
+  }
+});
+
 function switchToChat() {
   if (chatActive) return;
   chatActive = true;
