@@ -525,7 +525,7 @@ let selectedIndex = -1;
 let simulation = null;
 let rawApiData = null;
 let betSlip = []; // array of pick indices
-let bankroll = 1000;
+let bankroll = parseFloat(localStorage.getItem('bdl_bankroll')) || 1000;
 const REDUCED_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 // Adjustable weights (start with server defaults, user can tweak)
@@ -1067,6 +1067,7 @@ function calcWager(bankroll, prob) {
 
 function onBankrollChange(val) {
   bankroll = parseFloat(val) || 0;
+  try { localStorage.setItem('bdl_bankroll', String(bankroll)); } catch (e) { /* private mode */ }
   updateBetSlipCalc();
 }
 
