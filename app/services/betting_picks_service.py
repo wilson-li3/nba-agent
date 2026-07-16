@@ -7,6 +7,7 @@ UI is a calibrated probability, not a heuristic score.
 
 import asyncio
 import logging
+import time
 from collections import defaultdict
 from datetime import date, datetime, timezone
 
@@ -51,6 +52,11 @@ STAT_LABELS = {"pts": "PTS", "reb": "REB", "ast": "AST", "fg3m": "3PM", "pra": "
 
 MIN_PICK_PROB = 0.70   # a prop must clear this to make the board
 MAX_PICKS = 12
+
+# In-memory response cache — the underlying data only changes when new box
+# scores land, so recomputing picks on every page load is wasted work.
+_CACHE_TTL_SECONDS = 300
+_cache: dict = {"payload": None, "expires_at": 0.0}
 
 
 async def _load_season_logs(pool) -> list[dict]:
@@ -253,6 +259,9 @@ def _build_graph_data(p: Prediction, confidence: float) -> dict:
 
 async def get_structured_picks() -> dict:
     """Main entry point — calibrated picks with factor attribution."""
+    if _cache["payload"] is not None and time.monotonic() < _cache["expires_at"]:
+        return _cache["payload"]
+
     pool = await get_pool()
 
     logs_task = asyncio.create_task(_load_season_logs(pool))
@@ -314,7 +323,7 @@ async def get_structured_picks() -> dict:
     picks.sort(key=lambda x: x["confidence"], reverse=True)
     picks = picks[:MAX_PICKS]
 
-    return {
+    payload = {
         "picks": picks,
         "factor_weights": FACTOR_WEIGHTS,
         "meta": {
@@ -327,3 +336,6 @@ async def get_structured_picks() -> dict:
             },
         },
     }
+    _cache["payload"] = payload
+    _cache["expires_at"] = time.monotonic() + _CACHE_TTL_SECONDS
+    return payload
