@@ -12,21 +12,23 @@
 <script src="https://cdn.jsdelivr.net/npm/iconify-icon@2/dist/iconify-icon.min.js"></script>
 <style>
 :root{
-  --bg:oklch(0.985 0.002 80);
-  --surface:#FFFFFF;
-  --surface-2:oklch(0.968 0.002 80);
-  --ink:oklch(0.23 0.012 260);
-  --ink-2:oklch(0.45 0.012 260);
-  --ink-3:oklch(0.56 0.01 260);
-  --border:oklch(0.915 0.004 80);
-  --border-strong:oklch(0.86 0.006 80);
-  --accent:oklch(0.62 0.145 55);
-  --accent-ink:oklch(0.52 0.13 55);
-  --accent-soft:oklch(0.96 0.02 55);
-  --green:oklch(0.62 0.1 155);
-  --warn-bg:oklch(0.96 0.03 85);
-  --warn-ink:oklch(0.45 0.09 75);
-  --danger:oklch(0.55 0.18 25);
+  color-scheme:dark;
+  --bg:oklch(0.165 0.012 265);
+  --surface:oklch(0.205 0.012 265);
+  --surface-2:oklch(0.255 0.012 265);
+  --ink:oklch(0.93 0.005 80);
+  --ink-2:oklch(0.73 0.008 80);
+  --ink-3:oklch(0.60 0.008 80);
+  --border:oklch(0.30 0.012 265);
+  --border-strong:oklch(0.40 0.012 265);
+  --accent:oklch(0.72 0.15 55);
+  --accent-ink:oklch(0.78 0.13 60);
+  --accent-soft:oklch(0.27 0.045 55);
+  --accent-contrast:oklch(0.17 0.02 55);
+  --green:oklch(0.74 0.13 155);
+  --warn-bg:oklch(0.26 0.04 85);
+  --warn-ink:oklch(0.80 0.09 85);
+  --danger:oklch(0.70 0.16 25);
   /* z-scale */
   --z-sticky:10; --z-tooltip:40;
 }
@@ -110,7 +112,7 @@ iconify-icon{display:inline-block;vertical-align:-0.125em;}
 .pick-card:hover{background:var(--surface-2);}
 .pick-card.active{
   background:var(--accent-soft);
-  border-color:oklch(0.88 0.05 55);
+  border-color:oklch(0.42 0.07 55);
 }
 
 .pick-top{display:flex;align-items:center;gap:10px;}
@@ -127,7 +129,7 @@ iconify-icon{display:inline-block;vertical-align:-0.125em;}
   flex-shrink:0;
 }
 .pick-add-btn:hover{border-color:var(--accent);color:var(--accent-ink);}
-.pick-add-btn.in-slip{border-color:var(--accent);background:var(--accent);color:white;}
+.pick-add-btn.in-slip{border-color:var(--accent);background:var(--accent);color:var(--accent-contrast);}
 
 .pick-middle{display:flex;align-items:center;gap:10px;margin-top:8px;}
 .prop-label{
@@ -148,7 +150,7 @@ iconify-icon{display:inline-block;vertical-align:-0.125em;}
   border-radius:2px;
   overflow:hidden;
 }
-.pick-card.active .confidence-track{background:oklch(0.9 0.03 55);}
+.pick-card.active .confidence-track{background:oklch(0.33 0.04 55);}
 .confidence-fill{
   height:100%;
   width:100%;
@@ -220,7 +222,7 @@ iconify-icon{display:inline-block;vertical-align:-0.125em;}
   border-radius:10px;
   padding:10px 12px;
   font-size:0.78rem;
-  box-shadow:0 8px 24px oklch(0.2 0.01 260 / 0.08);
+  box-shadow:0 8px 24px oklch(0 0 0 / 0.45);
   pointer-events:none;
   opacity:0;
   transition:opacity 0.15s;
@@ -295,7 +297,7 @@ iconify-icon{display:inline-block;vertical-align:-0.125em;}
 .skeleton-panel{padding:18px 20px;}
 .skeleton{
   border-radius:8px;
-  background:linear-gradient(90deg, var(--surface-2) 25%, oklch(0.945 0.002 80) 50%, var(--surface-2) 75%);
+  background:linear-gradient(90deg, var(--surface-2) 25%, oklch(0.30 0.012 265) 50%, var(--surface-2) 75%);
   background-size:200% 100%;
   animation:shimmer 1.4s ease-in-out infinite;
 }
@@ -394,7 +396,7 @@ iconify-icon{display:inline-block;vertical-align:-0.125em;}
   font-size:0.85rem;color:var(--ink-3);
   transition:color 0.15s, background 0.15s;flex-shrink:0;
 }
-.slip-remove:hover{background:oklch(0.96 0.02 25);color:var(--danger);}
+.slip-remove:hover{background:oklch(0.28 0.04 25);color:var(--danger);}
 
 /* Parlay summary */
 .parlay-summary{
@@ -433,7 +435,7 @@ iconify-icon{display:inline-block;vertical-align:-0.125em;}
   color:var(--ink);
   font-variant-numeric:tabular-nums;
 }
-.bankroll-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px oklch(0.62 0.145 55 / 0.12);}
+.bankroll-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px oklch(0.72 0.15 55 / 0.25);}
 .bankroll-results{
   background:var(--surface-2);border-radius:10px;
   padding:10px 12px;
@@ -508,14 +510,14 @@ iconify-icon{display:inline-block;vertical-align:-0.125em;}
 
 <script>
 const CATEGORY_COLORS = {
-  center: 'oklch(0.62 0.145 55)',       // accent — the one strong color
-  historical: '#6B7A99',
-  trend: '#C08552',
-  matchup: '#6E9B7B',
-  situational: '#8A8F98',
-  derived: '#7C89B8',
-  advanced: '#6FA8A0',
-  meta: '#A08CA8',
+  center: 'oklch(0.72 0.15 55)',        // accent — the one strong color
+  historical: '#8FA6CE',
+  trend: '#E3A36C',
+  matchup: '#8FC7A4',
+  situational: '#9BA1AC',
+  derived: '#A0AEDF',
+  advanced: '#8FCCC2',
+  meta: '#C5A8C8',
 };
 
 const content = document.getElementById('content');
@@ -860,7 +862,7 @@ function renderGraph(pick, opts = {}) {
     .join('path')
     .attr('class', 'edge-path')
     .attr('d', edgePath)
-    .attr('stroke', 'oklch(0.45 0.012 260)')
+    .attr('stroke', 'oklch(0.80 0.008 80)')
     .attr('stroke-width', d => edgeWidth(d.weight))
     .attr('stroke-opacity', animate ? 0 : d => 0.07 + d.weight * 0.22)
     .attr('stroke-linecap', 'round');
@@ -879,8 +881,8 @@ function renderGraph(pick, opts = {}) {
   node.append('circle')
     .attr('class', 'node-base')
     .attr('r', nodeR)
-    .attr('fill', d => isCenter(d) ? CATEGORY_COLORS.center : 'white')
-    .attr('stroke', d => isCenter(d) ? 'none' : 'oklch(0.9 0.005 80)')
+    .attr('fill', d => isCenter(d) ? CATEGORY_COLORS.center : 'var(--surface)')
+    .attr('stroke', d => isCenter(d) ? 'none' : 'oklch(0.36 0.012 265)')
     .attr('stroke-width', 1);
 
   // Score ring: an arc around the node showing the factor score
@@ -901,21 +903,21 @@ function renderGraph(pick, opts = {}) {
   // Faint full track behind the ring
   node.filter(d => !isCenter(d))
     .insert('path', '.node-ring')
-    .attr('fill', 'oklch(0.93 0.003 80)')
+    .attr('fill', 'oklch(0.29 0.012 265)')
     .attr('d', d => ringArc(d, 1));
 
   // Labels
   node.append('text')
     .attr('class', 'node-label')
     .attr('dy', d => isCenter(d) ? '-0.35em' : '-0.15em')
-    .attr('fill', d => isCenter(d) ? 'white' : 'oklch(0.3 0.012 260)')
+    .attr('fill', d => isCenter(d) ? 'oklch(0.17 0.02 55)' : 'oklch(0.90 0.005 80)')
     .style('font-size', d => isCenter(d) ? '13px' : Math.max(9, nodeR(d) * 0.26) + 'px')
     .text(d => d.label);
 
   node.append('text')
     .attr('class', 'node-value')
     .attr('dy', '1.05em')
-    .attr('fill', d => isCenter(d) ? 'rgba(255,255,255,0.85)' : 'oklch(0.5 0.01 260)')
+    .attr('fill', d => isCenter(d) ? 'oklch(0.24 0.03 55)' : 'oklch(0.66 0.008 80)')
     .style('font-size', d => isCenter(d) ? '15px' : Math.max(9, nodeR(d) * 0.26) + 'px')
     .style('font-weight', d => isCenter(d) ? 700 : 500)
     .text(d => Math.round(d.value * 100) + '%');
@@ -984,7 +986,7 @@ function renderGraph(pick, opts = {}) {
     link
       .attr('stroke', l => {
         const ls = l.source.id, lt = l.target.id;
-        return (ls === d.id || lt === d.id) ? (CATEGORY_COLORS[d.category] || CATEGORY_COLORS.center) : 'oklch(0.45 0.012 260)';
+        return (ls === d.id || lt === d.id) ? (CATEGORY_COLORS[d.category] || CATEGORY_COLORS.center) : 'oklch(0.80 0.008 80)';
       })
       .attr('stroke-opacity', l => {
         const ls = l.source.id, lt = l.target.id;
@@ -1007,7 +1009,7 @@ function renderGraph(pick, opts = {}) {
   .on('mouseleave', () => {
     tooltip.classList.remove('visible');
     link
-      .attr('stroke', 'oklch(0.45 0.012 260)')
+      .attr('stroke', 'oklch(0.80 0.008 80)')
       .attr('stroke-opacity', d => 0.07 + d.weight * 0.22);
     node.attr('opacity', 1);
   });
