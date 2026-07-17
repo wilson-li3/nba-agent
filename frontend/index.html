@@ -115,6 +115,8 @@ iconify-icon{display:inline-block;vertical-align:-0.125em;}
   font-variant-numeric:tabular-nums;
 }
 .game-chip:hover{border-color:var(--border-strong);background:var(--surface-2);}
+.game-chip.live{border-color:oklch(0.42 0.07 155);}
+.game-chip.live:hover{border-color:oklch(0.55 0.09 155);}
 .game-chip small{color:var(--ink-3);font-size:0.72rem;}
 .live-dot{
   width:6px;height:6px;
@@ -613,10 +615,11 @@ async function fetchScores() {
           away_team_id: g.away_team_id,
           game_status_text: g.game_status_text
         }).replace(/'/g, '&#39;');
+        const liveClass = isLive ? ' live' : '';
         if (hasScore) {
-          return `<span class="game-chip" onclick='startGamePreview(${gameData})'>${liveDot}${teamLogo(g.away_team_id)}${escapeHtml(g.away_team_abbr)} ${g.away_pts} – ${g.home_pts} ${teamLogo(g.home_team_id)}${escapeHtml(g.home_team_abbr)} <small>${escapeHtml(statusText)}</small></span>`;
+          return `<span class="game-chip${liveClass}" onclick='startGamePreview(${gameData})'>${liveDot}${teamLogo(g.away_team_id)}${escapeHtml(g.away_team_abbr)} ${g.away_pts} – ${g.home_pts} ${teamLogo(g.home_team_id)}${escapeHtml(g.home_team_abbr)} <small>${escapeHtml(statusText)}</small></span>`;
         } else {
-          return `<span class="game-chip" onclick='startGamePreview(${gameData})'>${teamLogo(g.away_team_id)}${escapeHtml(g.away_team_abbr)} @ ${teamLogo(g.home_team_id)}${escapeHtml(g.home_team_abbr)} <small>${escapeHtml(statusText)}</small></span>`;
+          return `<span class="game-chip${liveClass}" onclick='startGamePreview(${gameData})'>${teamLogo(g.away_team_id)}${escapeHtml(g.away_team_abbr)} @ ${teamLogo(g.home_team_id)}${escapeHtml(g.home_team_abbr)} <small>${escapeHtml(statusText)}</small></span>`;
         }
       }).join(' ');
       scoresContent.innerHTML = label + chips;

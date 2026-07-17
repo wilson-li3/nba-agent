@@ -398,6 +398,18 @@ iconify-icon{display:inline-block;vertical-align:-0.125em;}
 .parlay-label{color:var(--ink-2);}
 .parlay-value{font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;}
 .parlay-value.highlight{color:var(--accent-ink);}
+.parlay-odds-box{
+  display:flex;justify-content:space-between;align-items:baseline;
+  margin-top:8px;padding:10px 12px;
+  background:var(--accent-soft);
+  border:1px solid oklch(0.38 0.06 55);
+  border-radius:10px;
+}
+.parlay-odds-box .odds-label{font-size:0.76rem;color:var(--ink-2);}
+.parlay-odds-box .odds-value{
+  font-size:1.15rem;font-weight:700;color:var(--accent-ink);
+  font-variant-numeric:tabular-nums;letter-spacing:-0.01em;
+}
 .parlay-warning{
   display:flex;gap:6px;align-items:flex-start;
   font-size:0.72rem;color:var(--warn-ink);
@@ -1202,9 +1214,9 @@ function renderBetSlip() {
         <span class="parlay-label">${isSingle ? 'Probability' : 'Combined Probability'}</span>
         <span class="parlay-value">${(displayConf * 100).toFixed(1)}%</span>
       </div>
-      <div class="parlay-row">
-        <span class="parlay-label">Implied Odds</span>
-        <span class="parlay-value highlight">${displayOdds}</span>
+      <div class="parlay-odds-box">
+        <span class="odds-label">Implied Odds</span>
+        <span class="odds-value">${displayOdds}</span>
       </div>
       ${warning ? `<div class="parlay-warning"><iconify-icon icon="tabler:alert-triangle"></iconify-icon><span>${warning}</span></div>` : ''}
     </div>
