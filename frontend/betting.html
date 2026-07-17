@@ -854,6 +854,28 @@ function renderGraph(pick, opts = {}) {
     return `M${sx},${sy} Q${mx},${my} ${tx},${ty}`;
   };
 
+  // Backdrop: faint dot grid + a soft glow centered on the probability node
+  const defs = svg.append('defs');
+  const dots = defs.append('pattern')
+    .attr('id', 'dotGrid')
+    .attr('width', 26).attr('height', 26)
+    .attr('patternUnits', 'userSpaceOnUse');
+  dots.append('circle')
+    .attr('cx', 1).attr('cy', 1).attr('r', 1)
+    .attr('fill', 'oklch(0.30 0.012 265)');
+  const glow = defs.append('radialGradient').attr('id', 'centerGlow');
+  glow.append('stop').attr('offset', '0%').attr('stop-color', 'oklch(0.72 0.15 55 / 0.14)');
+  glow.append('stop').attr('offset', '100%').attr('stop-color', 'transparent');
+
+  svg.append('rect')
+    .attr('width', width).attr('height', height)
+    .attr('fill', 'url(#dotGrid)');
+  svg.append('circle')
+    .attr('cx', width / 2).attr('cy', height / 2)
+    .attr('r', CENTER_R * 3.4)
+    .attr('fill', 'url(#centerGlow)')
+    .attr('pointer-events', 'none');
+
   const linkG = svg.append('g');
   const link = linkG.selectAll('path')
     .data(validEdges)
