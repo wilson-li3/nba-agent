@@ -142,26 +142,14 @@ iconify-icon{display:inline-block;vertical-align:-0.125em;}
   font-size:0.7rem;font-weight:500;
 }
 
-.confidence-bar{flex:1;display:flex;align-items:center;gap:8px;min-width:0;}
-.confidence-track{
-  flex:1;
-  height:3px;
-  background:var(--surface-2);
-  border-radius:2px;
-  overflow:hidden;
-}
-.pick-card.active .confidence-track{background:oklch(0.33 0.04 55);}
-.confidence-fill{
-  height:100%;
-  width:100%;
-  border-radius:2px;
-  background:var(--accent);
-  transform-origin:left;
-  transition:transform 0.3s cubic-bezier(0.25,1,0.5,1);
+.confidence-bar{flex:1;display:flex;align-items:center;justify-content:flex-end;gap:8px;min-width:0;}
+.pick-ring{flex-shrink:0;}
+.pick-ring .ring-fg{
+  transition:stroke-dasharray 0.3s cubic-bezier(0.25,1,0.5,1);
 }
 .confidence-pct{
-  font-size:0.78rem;font-weight:600;color:var(--ink);
-  min-width:34px;text-align:right;font-variant-numeric:tabular-nums;
+  font-size:0.82rem;font-weight:600;color:var(--ink);
+  text-align:right;font-variant-numeric:tabular-nums;
 }
 
 .pick-reasoning{
@@ -669,6 +657,18 @@ function renderApp(data) {
   selectPick(0);
 }
 
+// Small SVG donut — same visual language as the graph's score rings
+function confidenceRing(pct) {
+  const r = 9, C = 2 * Math.PI * r;
+  const filled = (pct / 100) * C;
+  return `
+    <svg class="pick-ring" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+      <circle cx="12" cy="12" r="${r}" fill="none" stroke="var(--surface-2)" stroke-width="3"/>
+      <circle class="ring-fg" cx="12" cy="12" r="${r}" fill="none" stroke="var(--accent)" stroke-width="3"
+        stroke-linecap="round" stroke-dasharray="${filled.toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 12 12)"/>
+    </svg>`;
+}
+
 // ── Render picks list ──
 function renderPicksList() {
   const list = document.getElementById('picksList');
@@ -691,10 +691,8 @@ function renderPicksList() {
         <span class="prop-label">Over ${pick.line} ${PROP_LABELS[pick.prop_type] || pick.prop_type}</span>
         ${pick.is_b2b ? '<span class="b2b-badge" title="Back-to-back game"><iconify-icon icon="tabler:zzz"></iconify-icon>B2B</span>' : ''}
         <div class="confidence-bar">
-          <div class="confidence-track">
-            <div class="confidence-fill" style="transform:scaleX(${conf / 100})"></div>
-          </div>
           <span class="confidence-pct">${conf}%</span>
+          ${confidenceRing(conf)}
         </div>
       </div>
       <div class="pick-reasoning">${escapeHtml(pick.reasoning)}</div>
