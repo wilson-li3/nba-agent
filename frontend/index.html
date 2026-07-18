@@ -140,7 +140,7 @@ iconify-icon{display:inline-block;vertical-align:-0.125em;}
   overflow:hidden;
 }
 .landing.hidden{display:none;}
-.landing > *{position:relative;}
+.landing > *:not(.court-layer):not(.landing-backdrop){position:relative;}
 
 /* Backdrop: a quiet accent glow + court arcs, behind everything */
 .landing-backdrop{

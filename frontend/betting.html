@@ -195,7 +195,8 @@ iconify-icon{display:inline-block;vertical-align:-0.125em;}
   pointer-events:none;
   font-variant-numeric:tabular-nums;
 }
-.edge-path{fill:none;pointer-events:none;}
+.edge-path{fill:none;pointer-events:none;transition:stroke-opacity 0.2s ease, stroke 0.2s ease;}
+.node-g{transition:opacity 0.2s ease;}
 
 /* Tooltip */
 .graph-tooltip{
@@ -647,7 +648,7 @@ function renderApp(data) {
         <span class="graph-player-label" id="graphPlayerLabel">Select a pick</span>
       </div>
       <div class="graph-container" id="graphContainer">
-        <div class="court-layer" aria-hidden="true"></div>
+        <div class="court-layer quiet" aria-hidden="true"></div>
         <svg id="graphSvg"></svg>
       </div>
       <div class="sliders-panel" id="slidersPanel">
@@ -903,6 +904,7 @@ function renderGraph(pick, opts = {}) {
   const node = nodeG.selectAll('g')
     .data(nodes)
     .join('g')
+    .attr('class', 'node-g')
     .attr('cursor', 'pointer')
     .attr('transform', d => `translate(${d.x},${d.y})`);
 
@@ -914,6 +916,7 @@ function renderGraph(pick, opts = {}) {
     .attr('r', nodeR)
     .style('fill', d => isCenter(d) ? CATEGORY_COLORS.center : 'var(--surface)')
     .style('stroke', d => isCenter(d) ? 'none' : 'var(--graph-node-stroke)')
+    .style('filter', d => isCenter(d) ? 'drop-shadow(0 0 16px var(--court-glow))' : 'none')
     .attr('stroke-width', 1);
 
   // Score ring: an arc around the node showing the factor score
@@ -928,6 +931,7 @@ function renderGraph(pick, opts = {}) {
     .append('path')
     .attr('class', 'node-ring')
     .style('fill', d => CATEGORY_COLORS[d.category] || 'var(--cat-situational)')
+    .style('filter', d => `drop-shadow(0 0 5px ${CATEGORY_COLORS[d.category] || 'var(--cat-situational)'})`)
     .attr('fill-opacity', 0.85)
     .attr('d', d => ringArc(d, animate ? 0.0001 : d.value));
 
