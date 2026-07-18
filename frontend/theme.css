@@ -1,0 +1,168 @@
+/* ── Ball Don't Lie — theme tokens ─────────────────────────────────────────
+   Four palettes selected via [data-theme] on <html>. Graphite is default.
+   Every surface, ink, accent, and graph color routes through these vars. */
+
+:root{
+  color-scheme:dark;
+  --bg:oklch(0.165 0.012 265);
+  --surface:oklch(0.205 0.012 265);
+  --surface-2:oklch(0.255 0.012 265);
+  --ink:oklch(0.93 0.005 80);
+  --ink-2:oklch(0.73 0.008 80);
+  --ink-3:oklch(0.60 0.008 80);
+  --border:oklch(0.30 0.012 265);
+  --border-strong:oklch(0.40 0.012 265);
+  --accent:oklch(0.72 0.15 55);
+  --accent-ink:oklch(0.78 0.13 60);
+  --accent-soft:oklch(0.27 0.045 55);
+  --accent-contrast:oklch(0.17 0.02 55);
+  --accent-edge:oklch(0.42 0.07 55);
+  --focus-ring:oklch(0.72 0.15 55 / 0.25);
+  --green:oklch(0.74 0.13 155);
+  --live-edge:oklch(0.42 0.07 155);
+  --warn-bg:oklch(0.26 0.04 85);
+  --warn-ink:oklch(0.80 0.09 85);
+  --danger:oklch(0.70 0.16 25);
+  --danger-soft:oklch(0.28 0.04 25);
+  /* graph */
+  --graph-node-stroke:oklch(0.36 0.012 265);
+  --graph-track:oklch(0.29 0.012 265);
+  --graph-label:oklch(0.90 0.005 80);
+  --graph-value:oklch(0.66 0.008 80);
+  --graph-edge:oklch(0.80 0.008 80);
+  --graph-glow:oklch(0.72 0.15 55 / 0.14);
+  --cat-historical:#8FA6CE;
+  --cat-trend:#E3A36C;
+  --cat-matchup:#8FC7A4;
+  --cat-situational:#9BA1AC;
+  --cat-derived:#A0AEDF;
+  --cat-advanced:#8FCCC2;
+  --cat-meta:#C5A8C8;
+  /* court backdrop */
+  --court-line:oklch(0.42 0.05 55 / 0.55);
+  --court-glow:oklch(0.72 0.15 55 / 0.30);
+  --landing-glow:oklch(0.72 0.15 55 / 0.07);
+}
+
+/* Midnight — deep indigo, violet accent */
+:root[data-theme="midnight"]{
+  color-scheme:dark;
+  --bg:oklch(0.16 0.03 290);
+  --surface:oklch(0.20 0.032 290);
+  --surface-2:oklch(0.25 0.034 290);
+  --ink:oklch(0.93 0.01 290);
+  --ink-2:oklch(0.74 0.015 290);
+  --ink-3:oklch(0.61 0.02 290);
+  --border:oklch(0.30 0.035 290);
+  --border-strong:oklch(0.40 0.04 290);
+  --accent:oklch(0.72 0.16 305);
+  --accent-ink:oklch(0.79 0.13 305);
+  --accent-soft:oklch(0.27 0.06 305);
+  --accent-contrast:oklch(0.16 0.04 305);
+  --accent-edge:oklch(0.43 0.09 305);
+  --focus-ring:oklch(0.72 0.16 305 / 0.25);
+  --green:oklch(0.74 0.13 160);
+  --live-edge:oklch(0.42 0.07 160);
+  --warn-bg:oklch(0.26 0.04 85);
+  --warn-ink:oklch(0.80 0.09 85);
+  --danger:oklch(0.70 0.16 20);
+  --danger-soft:oklch(0.28 0.04 20);
+  --graph-node-stroke:oklch(0.37 0.04 290);
+  --graph-track:oklch(0.29 0.035 290);
+  --graph-label:oklch(0.90 0.01 290);
+  --graph-value:oklch(0.67 0.015 290);
+  --graph-edge:oklch(0.82 0.02 290);
+  --graph-glow:oklch(0.72 0.16 305 / 0.15);
+  --cat-historical:#93A8DC;
+  --cat-trend:#E0A0D2;
+  --cat-matchup:#8FC7B8;
+  --cat-situational:#9DA2BC;
+  --cat-derived:#A8AAEE;
+  --cat-advanced:#8FC4DA;
+  --cat-meta:#CBA4DC;
+  --court-line:oklch(0.44 0.08 305 / 0.55);
+  --court-glow:oklch(0.72 0.16 305 / 0.32);
+  --landing-glow:oklch(0.72 0.16 305 / 0.08);
+}
+
+/* Emerald — green-tinted graphite, mint accent */
+:root[data-theme="emerald"]{
+  color-scheme:dark;
+  --bg:oklch(0.155 0.018 175);
+  --surface:oklch(0.195 0.02 175);
+  --surface-2:oklch(0.245 0.022 175);
+  --ink:oklch(0.93 0.006 160);
+  --ink-2:oklch(0.74 0.01 160);
+  --ink-3:oklch(0.61 0.012 160);
+  --border:oklch(0.29 0.024 175);
+  --border-strong:oklch(0.39 0.028 175);
+  --accent:oklch(0.77 0.13 162);
+  --accent-ink:oklch(0.80 0.12 162);
+  --accent-soft:oklch(0.26 0.05 168);
+  --accent-contrast:oklch(0.16 0.03 168);
+  --accent-edge:oklch(0.44 0.08 165);
+  --focus-ring:oklch(0.77 0.13 162 / 0.25);
+  --green:oklch(0.77 0.13 162);
+  --live-edge:oklch(0.44 0.08 162);
+  --warn-bg:oklch(0.26 0.04 85);
+  --warn-ink:oklch(0.80 0.09 85);
+  --danger:oklch(0.70 0.16 25);
+  --danger-soft:oklch(0.28 0.04 25);
+  --graph-node-stroke:oklch(0.36 0.03 175);
+  --graph-track:oklch(0.28 0.026 175);
+  --graph-label:oklch(0.90 0.008 160);
+  --graph-value:oklch(0.67 0.012 160);
+  --graph-edge:oklch(0.82 0.015 160);
+  --graph-glow:oklch(0.77 0.13 162 / 0.14);
+  --cat-historical:#8FB4CE;
+  --cat-trend:#E3B36C;
+  --cat-matchup:#8FD2A8;
+  --cat-situational:#96A8A2;
+  --cat-derived:#9FBEE0;
+  --cat-advanced:#8FD2C8;
+  --cat-meta:#BCA8CE;
+  --court-line:oklch(0.44 0.07 165 / 0.55);
+  --court-glow:oklch(0.77 0.13 162 / 0.30);
+  --landing-glow:oklch(0.77 0.13 162 / 0.07);
+}
+
+/* Daylight — clean light mode, brand orange accent */
+:root[data-theme="daylight"]{
+  color-scheme:light;
+  --bg:oklch(0.985 0.002 80);
+  --surface:#FFFFFF;
+  --surface-2:oklch(0.965 0.003 80);
+  --ink:oklch(0.23 0.012 260);
+  --ink-2:oklch(0.44 0.012 260);
+  --ink-3:oklch(0.54 0.012 260);
+  --border:oklch(0.915 0.004 80);
+  --border-strong:oklch(0.85 0.006 80);
+  --accent:oklch(0.62 0.145 55);
+  --accent-ink:oklch(0.51 0.13 55);
+  --accent-soft:oklch(0.955 0.022 55);
+  --accent-contrast:#FFFFFF;
+  --accent-edge:oklch(0.86 0.05 55);
+  --focus-ring:oklch(0.62 0.145 55 / 0.15);
+  --green:oklch(0.58 0.12 155);
+  --live-edge:oklch(0.80 0.07 155);
+  --warn-bg:oklch(0.95 0.035 85);
+  --warn-ink:oklch(0.46 0.09 75);
+  --danger:oklch(0.54 0.18 25);
+  --danger-soft:oklch(0.95 0.02 25);
+  --graph-node-stroke:oklch(0.89 0.006 80);
+  --graph-track:oklch(0.93 0.004 80);
+  --graph-label:oklch(0.30 0.012 260);
+  --graph-value:oklch(0.50 0.012 260);
+  --graph-edge:oklch(0.40 0.012 260);
+  --graph-glow:oklch(0.62 0.145 55 / 0.09);
+  --cat-historical:#5C6E96;
+  --cat-trend:#B06A2C;
+  --cat-matchup:#4F8563;
+  --cat-situational:#6E747E;
+  --cat-derived:#5F6FA8;
+  --cat-advanced:#3E837A;
+  --cat-meta:#8A6E92;
+  --court-line:oklch(0.82 0.04 55 / 0.8);
+  --court-glow:oklch(0.62 0.145 55 / 0.18);
+  --landing-glow:oklch(0.62 0.145 55 / 0.09);
+}

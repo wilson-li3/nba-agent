@@ -8,26 +8,15 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏀</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/theme.css">
+<script>document.documentElement.dataset.theme = localStorage.getItem('bdl_theme') || '';</script>
 <script src="https://cdn.jsdelivr.net/npm/marked@11/marked.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/iconify-icon@2/dist/iconify-icon.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
 :root{
-  color-scheme:dark;
-  --bg:oklch(0.165 0.012 265);
-  --surface:oklch(0.205 0.012 265);
-  --surface-2:oklch(0.255 0.012 265);
-  --ink:oklch(0.93 0.005 80);
-  --ink-2:oklch(0.73 0.008 80);
-  --ink-3:oklch(0.60 0.008 80);
-  --border:oklch(0.30 0.012 265);
-  --border-strong:oklch(0.40 0.012 265);
-  --accent:oklch(0.72 0.15 55);
-  --accent-ink:oklch(0.78 0.13 60);
-  --accent-soft:oklch(0.27 0.045 55);
-  --accent-contrast:oklch(0.17 0.02 55);
-  --green:oklch(0.74 0.13 155);
+  /* palette tokens live in theme.css */
 }
 
 html,body{
@@ -115,8 +104,8 @@ iconify-icon{display:inline-block;vertical-align:-0.125em;}
   font-variant-numeric:tabular-nums;
 }
 .game-chip:hover{border-color:var(--border-strong);background:var(--surface-2);}
-.game-chip.live{border-color:oklch(0.42 0.07 155);}
-.game-chip.live:hover{border-color:oklch(0.55 0.09 155);}
+.game-chip.live{border-color:var(--live-edge);}
+.game-chip.live:hover{border-color:var(--green);}
 .game-chip small{color:var(--ink-3);font-size:0.72rem;}
 .live-dot{
   width:6px;height:6px;
@@ -157,7 +146,7 @@ iconify-icon{display:inline-block;vertical-align:-0.125em;}
   inset:0;
   pointer-events:none;
   background:
-    radial-gradient(ellipse 640px 420px at 50% 38%, oklch(0.72 0.15 55 / 0.07), transparent 70%);
+    radial-gradient(ellipse 640px 420px at 50% 38%, var(--landing-glow), transparent 70%);
 }
 .landing-backdrop svg{
   position:absolute;
@@ -351,7 +340,7 @@ iconify-icon{display:inline-block;vertical-align:-0.125em;}
 }
 .input-bubble:focus-within{
   border-color:var(--accent);
-  box-shadow:0 0 0 3px oklch(0.72 0.15 55 / 0.25);
+  box-shadow:0 0 0 3px var(--focus-ring);
 }
 
 .input-bubble input{
@@ -496,10 +485,10 @@ iconify-icon{display:inline-block;vertical-align:-0.125em;}
     <div class="landing-backdrop" aria-hidden="true">
       <!-- court key + three-point arc, drawn as hairlines -->
       <svg viewBox="0 0 800 340" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M40 340 C40 120 760 120 760 340" stroke="oklch(0.34 0.02 55)" stroke-width="1.5"/>
-        <rect x="290" y="200" width="220" height="140" stroke="oklch(0.30 0.015 55)" stroke-width="1.5"/>
-        <circle cx="400" cy="200" r="58" stroke="oklch(0.34 0.02 55)" stroke-width="1.5"/>
-        <circle cx="400" cy="316" r="7" stroke="oklch(0.38 0.03 55)" stroke-width="1.5"/>
+        <path d="M40 340 C40 120 760 120 760 340" stroke="var(--court-line)" stroke-width="1.5"/>
+        <rect x="290" y="200" width="220" height="140" stroke="var(--court-line)" stroke-width="1.5"/>
+        <circle cx="400" cy="200" r="58" stroke="var(--court-line)" stroke-width="1.5"/>
+        <circle cx="400" cy="316" r="7" stroke="var(--court-line)" stroke-width="1.5"/>
       </svg>
     </div>
     <h1 class="landing-title">Ask anything about the NBA</h1>

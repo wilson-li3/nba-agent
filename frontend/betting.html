@@ -8,28 +8,13 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏀</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/theme.css">
+<script>document.documentElement.dataset.theme = localStorage.getItem('bdl_theme') || '';</script>
 <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/iconify-icon@2/dist/iconify-icon.min.js"></script>
 <style>
 :root{
-  color-scheme:dark;
-  --bg:oklch(0.165 0.012 265);
-  --surface:oklch(0.205 0.012 265);
-  --surface-2:oklch(0.255 0.012 265);
-  --ink:oklch(0.93 0.005 80);
-  --ink-2:oklch(0.73 0.008 80);
-  --ink-3:oklch(0.60 0.008 80);
-  --border:oklch(0.30 0.012 265);
-  --border-strong:oklch(0.40 0.012 265);
-  --accent:oklch(0.72 0.15 55);
-  --accent-ink:oklch(0.78 0.13 60);
-  --accent-soft:oklch(0.27 0.045 55);
-  --accent-contrast:oklch(0.17 0.02 55);
-  --green:oklch(0.74 0.13 155);
-  --warn-bg:oklch(0.26 0.04 85);
-  --warn-ink:oklch(0.80 0.09 85);
-  --danger:oklch(0.70 0.16 25);
-  /* z-scale */
+  /* palette tokens live in theme.css */
   --z-sticky:10; --z-tooltip:40;
 }
 
@@ -112,7 +97,7 @@ iconify-icon{display:inline-block;vertical-align:-0.125em;}
 .pick-card:hover{background:var(--surface-2);}
 .pick-card.active{
   background:var(--accent-soft);
-  border-color:oklch(0.42 0.07 55);
+  border-color:var(--accent-edge);
 }
 
 .pick-top{display:flex;align-items:center;gap:10px;}
@@ -285,7 +270,7 @@ iconify-icon{display:inline-block;vertical-align:-0.125em;}
 .skeleton-panel{padding:18px 20px;}
 .skeleton{
   border-radius:8px;
-  background:linear-gradient(90deg, var(--surface-2) 25%, oklch(0.30 0.012 265) 50%, var(--surface-2) 75%);
+  background:linear-gradient(90deg, var(--surface-2) 25%, var(--border) 50%, var(--surface-2) 75%);
   background-size:200% 100%;
   animation:shimmer 1.4s ease-in-out infinite;
 }
@@ -384,7 +369,7 @@ iconify-icon{display:inline-block;vertical-align:-0.125em;}
   font-size:0.85rem;color:var(--ink-3);
   transition:color 0.15s, background 0.15s;flex-shrink:0;
 }
-.slip-remove:hover{background:oklch(0.28 0.04 25);color:var(--danger);}
+.slip-remove:hover{background:var(--danger-soft);color:var(--danger);}
 
 /* Parlay summary */
 .parlay-summary{
@@ -402,7 +387,7 @@ iconify-icon{display:inline-block;vertical-align:-0.125em;}
   display:flex;justify-content:space-between;align-items:baseline;
   margin-top:8px;padding:10px 12px;
   background:var(--accent-soft);
-  border:1px solid oklch(0.38 0.06 55);
+  border:1px solid var(--accent-edge);
   border-radius:10px;
 }
 .parlay-odds-box .odds-label{font-size:0.76rem;color:var(--ink-2);}
@@ -435,7 +420,7 @@ iconify-icon{display:inline-block;vertical-align:-0.125em;}
   color:var(--ink);
   font-variant-numeric:tabular-nums;
 }
-.bankroll-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px oklch(0.72 0.15 55 / 0.25);}
+.bankroll-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--focus-ring);}
 .bankroll-results{
   background:var(--surface-2);border-radius:10px;
   padding:10px 12px;
@@ -510,14 +495,14 @@ iconify-icon{display:inline-block;vertical-align:-0.125em;}
 
 <script>
 const CATEGORY_COLORS = {
-  center: 'oklch(0.72 0.15 55)',        // accent — the one strong color
-  historical: '#8FA6CE',
-  trend: '#E3A36C',
-  matchup: '#8FC7A4',
-  situational: '#9BA1AC',
-  derived: '#A0AEDF',
-  advanced: '#8FCCC2',
-  meta: '#C5A8C8',
+  center: 'var(--accent)',              // accent — the one strong color
+  historical: 'var(--cat-historical)',
+  trend: 'var(--cat-trend)',
+  matchup: 'var(--cat-matchup)',
+  situational: 'var(--cat-situational)',
+  derived: 'var(--cat-derived)',
+  advanced: 'var(--cat-advanced)',
+  meta: 'var(--cat-meta)',
 };
 
 const content = document.getElementById('content');
@@ -874,10 +859,10 @@ function renderGraph(pick, opts = {}) {
     .attr('patternUnits', 'userSpaceOnUse');
   dots.append('circle')
     .attr('cx', 1).attr('cy', 1).attr('r', 1)
-    .attr('fill', 'oklch(0.30 0.012 265)');
+    .style('fill', 'var(--border)');
   const glow = defs.append('radialGradient').attr('id', 'centerGlow');
-  glow.append('stop').attr('offset', '0%').attr('stop-color', 'oklch(0.72 0.15 55 / 0.14)');
-  glow.append('stop').attr('offset', '100%').attr('stop-color', 'transparent');
+  glow.append('stop').attr('offset', '0%').style('stop-color', 'var(--graph-glow)');
+  glow.append('stop').attr('offset', '100%').style('stop-color', 'transparent');
 
   svg.append('rect')
     .attr('width', width).attr('height', height)
@@ -894,7 +879,7 @@ function renderGraph(pick, opts = {}) {
     .join('path')
     .attr('class', 'edge-path')
     .attr('d', edgePath)
-    .attr('stroke', 'oklch(0.80 0.008 80)')
+    .style('stroke', 'var(--graph-edge)')
     .attr('stroke-width', d => edgeWidth(d.weight))
     .attr('stroke-opacity', animate ? 0 : d => 0.07 + d.weight * 0.22)
     .attr('stroke-linecap', 'round');
@@ -913,8 +898,8 @@ function renderGraph(pick, opts = {}) {
   node.append('circle')
     .attr('class', 'node-base')
     .attr('r', nodeR)
-    .attr('fill', d => isCenter(d) ? CATEGORY_COLORS.center : 'var(--surface)')
-    .attr('stroke', d => isCenter(d) ? 'none' : 'oklch(0.36 0.012 265)')
+    .style('fill', d => isCenter(d) ? CATEGORY_COLORS.center : 'var(--surface)')
+    .style('stroke', d => isCenter(d) ? 'none' : 'var(--graph-node-stroke)')
     .attr('stroke-width', 1);
 
   // Score ring: an arc around the node showing the factor score
@@ -928,28 +913,28 @@ function renderGraph(pick, opts = {}) {
   node.filter(d => !isCenter(d))
     .append('path')
     .attr('class', 'node-ring')
-    .attr('fill', d => CATEGORY_COLORS[d.category] || '#8A8F98')
+    .style('fill', d => CATEGORY_COLORS[d.category] || 'var(--cat-situational)')
     .attr('fill-opacity', 0.85)
     .attr('d', d => ringArc(d, animate ? 0.0001 : d.value));
 
   // Faint full track behind the ring
   node.filter(d => !isCenter(d))
     .insert('path', '.node-ring')
-    .attr('fill', 'oklch(0.29 0.012 265)')
+    .style('fill', 'var(--graph-track)')
     .attr('d', d => ringArc(d, 1));
 
   // Labels
   node.append('text')
     .attr('class', 'node-label')
     .attr('dy', d => isCenter(d) ? '-0.35em' : '-0.15em')
-    .attr('fill', d => isCenter(d) ? 'oklch(0.17 0.02 55)' : 'oklch(0.90 0.005 80)')
+    .style('fill', d => isCenter(d) ? 'var(--accent-contrast)' : 'var(--graph-label)')
     .style('font-size', d => isCenter(d) ? '13px' : Math.max(9, nodeR(d) * 0.26) + 'px')
     .text(d => d.label);
 
   node.append('text')
     .attr('class', 'node-value')
     .attr('dy', '1.05em')
-    .attr('fill', d => isCenter(d) ? 'oklch(0.24 0.03 55)' : 'oklch(0.66 0.008 80)')
+    .style('fill', d => isCenter(d) ? 'var(--accent-contrast)' : 'var(--graph-value)')
     .style('font-size', d => isCenter(d) ? '15px' : Math.max(9, nodeR(d) * 0.26) + 'px')
     .style('font-weight', d => isCenter(d) ? 700 : 500)
     .text(d => Math.round(d.value * 100) + '%');
@@ -1016,9 +1001,9 @@ function renderGraph(pick, opts = {}) {
     tooltip.style.top = (event.clientY - rect.top - 12) + 'px';
 
     link
-      .attr('stroke', l => {
+      .style('stroke', l => {
         const ls = l.source.id, lt = l.target.id;
-        return (ls === d.id || lt === d.id) ? (CATEGORY_COLORS[d.category] || CATEGORY_COLORS.center) : 'oklch(0.80 0.008 80)';
+        return (ls === d.id || lt === d.id) ? (CATEGORY_COLORS[d.category] || CATEGORY_COLORS.center) : 'var(--graph-edge)';
       })
       .attr('stroke-opacity', l => {
         const ls = l.source.id, lt = l.target.id;
@@ -1041,7 +1026,7 @@ function renderGraph(pick, opts = {}) {
   .on('mouseleave', () => {
     tooltip.classList.remove('visible');
     link
-      .attr('stroke', 'oklch(0.80 0.008 80)')
+      .style('stroke', 'var(--graph-edge)')
       .attr('stroke-opacity', d => 0.07 + d.weight * 0.22);
     node.attr('opacity', 1);
   });
