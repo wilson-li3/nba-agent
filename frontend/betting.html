@@ -173,7 +173,7 @@ iconify-icon{display:inline-block;vertical-align:-0.125em;}
   min-height:0;
   overflow:hidden;
 }
-#graphSvg{width:100%;height:100%;display:block;}
+#graphSvg{width:100%;height:100%;display:block;position:relative;}
 
 .node-label{
   font-family:'IBM Plex Sans',sans-serif;
@@ -638,6 +638,7 @@ function renderApp(data) {
         <span class="graph-player-label" id="graphPlayerLabel">Select a pick</span>
       </div>
       <div class="graph-container" id="graphContainer">
+        <div class="court-layer" aria-hidden="true"></div>
         <svg id="graphSvg"></svg>
       </div>
       <div class="sliders-panel" id="slidersPanel">
@@ -653,6 +654,7 @@ function renderApp(data) {
     </div>
     <div class="betslip-panel" id="betslipPanel"></div>`;
 
+  initCourtLayers();
   renderPicksList();
   renderSliders();
   renderBetSlip();
@@ -856,22 +858,13 @@ function renderGraph(pick, opts = {}) {
     return `M${sx},${sy} Q${mx},${my} ${tx},${ty}`;
   };
 
-  // Backdrop: faint dot grid + a soft glow centered on the probability node
+  // Backdrop: a soft glow centered on the probability node (the holographic
+  // court behind the svg provides the rest of the atmosphere)
   const defs = svg.append('defs');
-  const dots = defs.append('pattern')
-    .attr('id', 'dotGrid')
-    .attr('width', 26).attr('height', 26)
-    .attr('patternUnits', 'userSpaceOnUse');
-  dots.append('circle')
-    .attr('cx', 1).attr('cy', 1).attr('r', 1)
-    .style('fill', 'var(--border)');
   const glow = defs.append('radialGradient').attr('id', 'centerGlow');
   glow.append('stop').attr('offset', '0%').style('stop-color', 'var(--graph-glow)');
   glow.append('stop').attr('offset', '100%').style('stop-color', 'transparent');
 
-  svg.append('rect')
-    .attr('width', width).attr('height', height)
-    .attr('fill', 'url(#dotGrid)');
   svg.append('circle')
     .attr('cx', width / 2).attr('cy', height / 2)
     .attr('r', CENTER_R * 3.4)
@@ -1267,6 +1260,7 @@ window.addEventListener('resize', () => {
 
 // ── Init ──
 initThemePicker(document.getElementById('themeMount'));
+initCourtLayers();
 loadPicks();
 </script>
 </body>

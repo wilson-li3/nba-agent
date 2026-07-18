@@ -42,3 +42,31 @@ function initThemePicker(mount) {
     </button>`).join('');
   document.body.appendChild(pop);
 }
+
+/* Holographic court backdrop — a perspective half-court drawn in glowing
+   hairlines. Injected into every .court-layer mount on the page. */
+function bdlCourtSVG() {
+  return `
+  <svg viewBox="0 0 1200 620" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMax meet">
+    <g stroke="var(--court-line)" stroke-width="1.5">
+      <!-- floor boundary -->
+      <path d="M80 600 L340 220 L860 220 L1120 600 Z"/>
+      <!-- half-court line + center circle -->
+      <ellipse cx="600" cy="220" rx="92" ry="20"/>
+      <!-- three-point arc -->
+      <path d="M190 600 C240 336 960 336 1010 600"/>
+      <!-- key -->
+      <path d="M500 600 L540 382 L660 382 L700 600"/>
+      <ellipse cx="600" cy="382" rx="62" ry="15"/>
+      <!-- hoop + backboard -->
+      <line x1="556" y1="500" x2="644" y2="500"/>
+      <ellipse cx="600" cy="516" rx="17" ry="5.5"/>
+    </g>
+  </svg>`;
+}
+
+function initCourtLayers() {
+  document.querySelectorAll('.court-layer').forEach(el => {
+    el.innerHTML = bdlCourtSVG();
+  });
+}

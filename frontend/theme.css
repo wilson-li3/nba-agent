@@ -210,3 +210,30 @@
 .theme-name{flex:1;}
 .theme-check{visibility:hidden;color:var(--accent-ink);font-size:0.9rem;}
 .theme-option.active .theme-check{visibility:visible;}
+
+/* ── Holographic court backdrop ── */
+.court-layer{
+  position:absolute;
+  inset:0;
+  overflow:hidden;
+  pointer-events:none;
+}
+.court-layer svg{
+  position:absolute;
+  left:50%;
+  bottom:-6%;
+  transform:translateX(-50%);
+  width:min(1100px, 150%);
+  filter:drop-shadow(0 0 9px var(--court-glow));
+  opacity:0.5;
+  animation:courtPulse 9s ease-in-out infinite alternate;
+}
+.court-layer.quiet svg{opacity:0.28;}
+@keyframes courtPulse{
+  from{opacity:0.38}
+  to{opacity:0.6}
+}
+.court-layer.quiet svg{animation:none;}
+@media (prefers-reduced-motion: reduce){
+  .court-layer svg{animation:none;}
+}
