@@ -12,6 +12,7 @@
 <script>document.documentElement.dataset.theme = localStorage.getItem('bdl_theme') || '';</script>
 <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/iconify-icon@2/dist/iconify-icon.min.js"></script>
+<script src="/static/theme.js"></script>
 <style>
 :root{
   /* palette tokens live in theme.css */
@@ -57,6 +58,7 @@ iconify-icon{display:inline-block;vertical-align:-0.125em;}
   transition:border-color 0.15s, color 0.15s;
 }
 .back-link:hover{border-color:var(--border-strong);color:var(--ink);}
+.header-right{display:flex;align-items:center;gap:8px;}
 
 /* ── Main layout ── */
 .content{
@@ -463,10 +465,13 @@ iconify-icon{display:inline-block;vertical-align:-0.125em;}
     </a>
     <span class="header-context">Betting picks · calibrated model probabilities</span>
   </div>
-  <a href="/" class="back-link">
-    <iconify-icon icon="tabler:arrow-left"></iconify-icon>
-    Chat
-  </a>
+  <div class="header-right">
+    <a href="/" class="back-link">
+      <iconify-icon icon="tabler:arrow-left"></iconify-icon>
+      Chat
+    </a>
+    <span id="themeMount"></span>
+  </div>
 </header>
 
 <!-- Content -->
@@ -1261,6 +1266,7 @@ window.addEventListener('resize', () => {
 });
 
 // ── Init ──
+initThemePicker(document.getElementById('themeMount'));
 loadPicks();
 </script>
 </body>

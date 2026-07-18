@@ -12,6 +12,7 @@
 <script>document.documentElement.dataset.theme = localStorage.getItem('bdl_theme') || '';</script>
 <script src="https://cdn.jsdelivr.net/npm/marked@11/marked.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/iconify-icon@2/dist/iconify-icon.min.js"></script>
+<script src="/static/theme.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
@@ -68,6 +69,7 @@ iconify-icon{display:inline-block;vertical-align:-0.125em;}
   white-space:nowrap;
 }
 .betting-link:hover{border-color:var(--border-strong);color:var(--ink);}
+.header-right{display:flex;align-items:center;gap:8px;}
 
 /* ─── SCORES TICKER ─── */
 .scores-bar{
@@ -469,10 +471,13 @@ iconify-icon{display:inline-block;vertical-align:-0.125em;}
       <iconify-icon icon="tabler:ball-basketball"></iconify-icon>
       Ball Don't Lie
     </button>
-    <a href="/static/betting.html" class="betting-link">
-      <iconify-icon icon="tabler:chart-dots-3"></iconify-icon>
-      Betting Picks
-    </a>
+    <div class="header-right">
+      <a href="/static/betting.html" class="betting-link">
+        <iconify-icon icon="tabler:chart-dots-3"></iconify-icon>
+        Betting Picks
+      </a>
+      <span id="themeMount"></span>
+    </div>
   </header>
 
   <!-- Scores ticker -->
@@ -617,6 +622,7 @@ async function fetchScores() {
 }
 
 // ─── Init ───
+initThemePicker(document.getElementById('themeMount'));
 fetchHeadlines();
 fetchScores();
 setInterval(fetchScores, 60000);
