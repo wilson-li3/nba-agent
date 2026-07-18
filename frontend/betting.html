@@ -94,9 +94,16 @@ iconify-icon{display:inline-block;vertical-align:-0.125em;}
   padding:12px;
   margin-bottom:2px;
   cursor:pointer;
-  transition:background 0.15s, border-color 0.15s;
+  transition:background 0.15s, border-color 0.15s, transform 0.15s;
 }
-.pick-card:hover{background:var(--surface-2);}
+.pick-card:hover{background:var(--surface-2);transform:translateY(-1px);}
+.picks-list.animate-in .pick-card{
+  animation:cardIn 0.4s cubic-bezier(0.25,1,0.5,1) both;
+}
+@keyframes cardIn{
+  from{opacity:0;transform:translateY(10px)}
+  to{opacity:1;transform:translateY(0)}
+}
 .pick-card.active{
   background:var(--accent-soft);
   border-color:var(--accent-edge);
@@ -116,6 +123,7 @@ iconify-icon{display:inline-block;vertical-align:-0.125em;}
   flex-shrink:0;
 }
 .pick-add-btn:hover{border-color:var(--accent);color:var(--accent-ink);}
+.pick-add-btn:active{transform:scale(0.9);}
 .pick-add-btn.in-slip{border-color:var(--accent);background:var(--accent);color:var(--accent-contrast);}
 
 .pick-middle{display:flex;align-items:center;gap:10px;margin-top:8px;}
@@ -358,6 +366,7 @@ iconify-icon{display:inline-block;vertical-align:-0.125em;}
   border-radius:10px;margin-bottom:6px;
   background:var(--surface);
   transition:border-color 0.15s;
+  animation:cardIn 0.3s cubic-bezier(0.25,1,0.5,1);
 }
 .slip-card:hover{border-color:var(--border-strong);}
 .slip-info{flex:1;min-width:0;}
@@ -674,6 +683,7 @@ function confidenceRing(pct) {
 }
 
 // ── Render picks list ──
+let picksAnimatedOnce = false;
 function renderPicksList() {
   const list = document.getElementById('picksList');
   if (!list) return;
@@ -681,7 +691,7 @@ function renderPicksList() {
     const conf = Math.round((pick._userConfidence ?? pick.confidence) * 100);
     const inSlip = betSlip.includes(i);
     return `
-    <div class="pick-card ${i === selectedIndex ? 'active' : ''}" data-index="${i}" onclick="selectPick(${i})">
+    <div class="pick-card ${i === selectedIndex ? 'active' : ''}" data-index="${i}" onclick="selectPick(${i})" style="animation-delay:${i * 35}ms">
       <div class="pick-top">
         <img class="pick-team-logo" src="${teamLogo(pick.team)}" alt="${escapeHtml(pick.team || '')}" onerror="this.style.display='none'">
         <span class="pick-player">${escapeHtml(pick.player_name)}</span>
@@ -702,6 +712,12 @@ function renderPicksList() {
       <div class="pick-reasoning">${escapeHtml(pick.reasoning)}</div>
     </div>`;
   }).join('');
+
+  if (!picksAnimatedOnce) {
+    picksAnimatedOnce = true;
+    list.classList.add('animate-in');
+    setTimeout(() => list.classList.remove('animate-in'), 1000);
+  }
 }
 
 // ── Render weight sliders ──

@@ -102,10 +102,10 @@ iconify-icon{display:inline-block;vertical-align:-0.125em;}
   white-space:nowrap;
   background:var(--surface);
   cursor:pointer;
-  transition:border-color 0.15s, background 0.15s;
+  transition:border-color 0.15s, background 0.15s, transform 0.15s;
   font-variant-numeric:tabular-nums;
 }
-.game-chip:hover{border-color:var(--border-strong);background:var(--surface-2);}
+.game-chip:hover{border-color:var(--border-strong);background:var(--surface-2);transform:translateY(-1px);}
 .game-chip.live{border-color:var(--live-edge);}
 .game-chip.live:hover{border-color:var(--green);}
 .game-chip small{color:var(--ink-3);font-size:0.72rem;}
@@ -189,9 +189,9 @@ iconify-icon{display:inline-block;vertical-align:-0.125em;}
   color:var(--ink-2);
   font-size:0.8rem;
   cursor:pointer;
-  transition:border-color 0.15s, color 0.15s;
+  transition:border-color 0.15s, color 0.15s, transform 0.15s;
 }
-.suggestion-chip:hover{border-color:var(--border-strong);color:var(--ink);}
+.suggestion-chip:hover{border-color:var(--border-strong);color:var(--ink);transform:translateY(-1px);}
 
 /* Headlines — quiet, landing only */
 .headlines{
