@@ -29,6 +29,7 @@ import math
 import numpy as np
 
 from app.db import get_pool
+from app.prompts.analyze_slip import ANALYZE_SLIP_PROMPT
 from app.prompts.assess_news_impact import ASSESS_NEWS_IMPACT_PROMPT
 from app.services.betting_service import _execute_query
 from app.services.llm import chat_completion, embed_text
@@ -310,13 +311,50 @@ def _run_monte_carlo(legs: list[dict], trials: int = TRIALS, seed: int = 7) -> d
 
     hist = np.bincount(legs_hit, minlength=n + 1) / trials
 
+    # A random slice of individual trials — the UI plots one dot per trial, so
+    # the viewer sees the actual spread of outcomes rather than a summary bar.
+    sample_idx = rng.integers(0, trials, size=min(300, trials))
+    sample = legs_hit[sample_idx]
+
     return {
         "sim_prob": float(all_hit.mean()),
         "leg_probs": [float(c) for c in hits.mean(axis=0)],
         "legs_hit_hist": [round(float(x), 5) for x in hist],
+        "sample_outcomes": [int(x) for x in sample],
         "convergence": convergence,
         "trials": trials,
     }
+
+
+async def _write_analysis(usable: list[dict], parlay: dict) -> str:
+    """Short analyst narrative over the news notes and the simulated numbers."""
+    lines = []
+    for leg in usable:
+        news = leg.get("news") or {}
+        note = news.get("note") or "no relevant news found"
+        lines.append(
+            f"- {leg['player_name']} over {leg['line']:g} {STAT_LABELS.get(leg['prop_type'], leg['prop_type'])}: "
+            f"model {leg['model_prob']:.1%}, after news {leg['adjusted_prob']:.1%}, "
+            f"projected {leg['projected_mean']} ± {leg['projected_sd']}. "
+            f"News read: {news.get('impact', 'neutral')} ({news.get('confidence', 'low')} confidence) — {note}"
+        )
+    prompt = ANALYZE_SLIP_PROMPT.format(
+        legs="\n".join(lines),
+        sim_prob=f"{parlay['sim_prob']:.1%}",
+        independent_prob=f"{parlay['independent_prob']:.1%}",
+        correlation_effect=f"{parlay['correlation_effect'] * 100:+.1f} points",
+        breakeven_odds=parlay["breakeven_odds"],
+        book_odds=parlay["book_odds"],
+        ev=f"${parlay['ev_per_100']:+.2f}",
+    )
+    try:
+        return (await chat_completion(
+            messages=[{"role": "user", "content": prompt}],
+            model="gpt-4o", temperature=0.3, max_tokens=400,
+        )).strip()
+    except Exception:
+        logger.warning("Slip analysis failed", exc_info=True)
+        return ""
 
 
 async def simulate_slip(legs: list[dict], use_news: bool = True) -> dict:
@@ -354,25 +392,40 @@ async def simulate_slip(legs: list[dict], use_news: bool = True) -> dict:
     for leg in usable:
         model_only *= leg["model_prob"]
 
+    parlay = {
+        "leg_count": n,
+        "independent_prob": round(independent, 5),
+        "sim_prob": round(sim_prob, 5),
+        "correlation_effect": round(sim_prob - independent, 5),
+        "news_effect": round(independent - model_only, 5),
+        "fair_odds": american_odds(sim_prob),
+        "breakeven_decimal": round(breakeven_decimal, 3),
+        "breakeven_odds": american_odds(sim_prob),
+        "book_decimal": round(book_decimal, 3),
+        "book_odds": decimal_to_american(book_decimal),
+        "book_implied_prob": round(1.0 / book_decimal, 5),
+        "ev_per_100": round(ev_per_100, 2),
+        "edge": round(edge, 5),
+        "verdict": "positive" if ev_per_100 > 0 else "negative",
+    }
+
+    analysis = await _write_analysis(usable, parlay) if use_news else ""
+
+    sources, seen = [], set()
+    for leg in usable:
+        for src in (leg.get("news") or {}).get("sources", []):
+            key = src.get("url") or src.get("title")
+            if key and key not in seen:
+                seen.add(key)
+                sources.append(src)
+
     return {
         "legs": priced,
-        "parlay": {
-            "leg_count": n,
-            "independent_prob": round(independent, 5),
-            "sim_prob": round(sim_prob, 5),
-            "correlation_effect": round(sim_prob - independent, 5),
-            "news_effect": round(independent - model_only, 5),
-            "fair_odds": american_odds(sim_prob),
-            "breakeven_decimal": round(breakeven_decimal, 3),
-            "breakeven_odds": american_odds(sim_prob),
-            "book_decimal": round(book_decimal, 3),
-            "book_odds": decimal_to_american(book_decimal),
-            "book_implied_prob": round(1.0 / book_decimal, 5),
-            "ev_per_100": round(ev_per_100, 2),
-            "edge": round(edge, 5),
-            "verdict": "positive" if ev_per_100 > 0 else "negative",
-        },
+        "parlay": parlay,
+        "analysis": analysis,
+        "sources": sources[:5],
         "legs_hit_hist": mc["legs_hit_hist"],
+        "sample_outcomes": mc["sample_outcomes"],
         "convergence": mc["convergence"],
         "trials": mc["trials"],
         "correlation": {"same_game": W_GAME, "same_player": W_GAME + W_PLAYER},
