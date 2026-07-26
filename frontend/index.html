@@ -207,7 +207,7 @@ iconify-icon{display:inline-block;vertical-align:-0.125em;}
   border-radius:10px;
   padding:10px 12px;
   font-size:0.78rem;
-  box-shadow:0 8px 24px oklch(0 0 0 / 0.45);
+  box-shadow:var(--shadow-2);
   pointer-events:none;
   opacity:0;
   transition:opacity 0.15s;
@@ -596,7 +596,7 @@ iconify-icon{display:inline-block;vertical-align:-0.125em;}
 @keyframes msgIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 .message.user{
   align-self:flex-end;
-  background:var(--accent);color:var(--accent-contrast);
+  background:var(--primary);color:#FFFFFF;
   border-bottom-right-radius:4px;
 }
 .message.assistant{
@@ -772,7 +772,7 @@ iconify-icon{display:inline-block;vertical-align:-0.125em;}
 .sim-launch:disabled{cursor:progress;}
 .sim-launch.running::after{
   content:'';position:absolute;inset:0;
-  background:linear-gradient(100deg,transparent 20%,rgb(255 255 255 / 0.28) 50%,transparent 80%);
+  background:linear-gradient(100deg,transparent 20%,rgb(255 255 255 / 0.34) 50%,transparent 80%);
   animation:simSheen 1.1s linear infinite;
 }
 @keyframes simSheen{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
@@ -984,7 +984,7 @@ body{display:flex;flex-direction:column;}
   padding:9px 11px;
   border:1px solid var(--accent-edge);border-radius:10px;
   background:var(--surface);
-  box-shadow:0 10px 28px oklch(0 0 0 / 0.4);
+  box-shadow:var(--shadow-2);
   font-size:0.76rem;line-height:1.45;color:var(--ink);
   cursor:pointer;
   animation:coachIn 0.35s cubic-bezier(0.25,1,0.5,1);
@@ -1411,6 +1411,7 @@ function renderGraph(pick, opts = {}) {
     return nodeIds.has(s) && nodeIds.has(t);
   });
 
+  const glowFx = parseFloat(getComputedStyle(container).getPropertyValue('--fx-glow')) || 0;
   const CENTER_R = 54;
   const radiusScale = d3.scaleSqrt().domain([0, 1]).range([26, 42]);
   const nodeR = d => d.id === 'confidence' ? CENTER_R : radiusScale(d.weight);
@@ -1512,7 +1513,9 @@ function renderGraph(pick, opts = {}) {
     .append('path')
     .attr('class', 'node-ring')
     .style('fill', d => CATEGORY_COLORS[d.category] || 'var(--cat-situational)')
-    .style('filter', d => `drop-shadow(0 0 5px ${CATEGORY_COLORS[d.category] || 'var(--cat-situational)'})`)
+    .style('filter', d => glowFx > 0.5
+      ? `drop-shadow(0 0 5px ${CATEGORY_COLORS[d.category] || 'var(--cat-situational)'})`
+      : 'none')
     .attr('fill-opacity', 0.85)
     .attr('d', d => ringArc(d, animate ? 0.0001 : d.value));
 
@@ -1895,11 +1898,13 @@ function simColors(el) {
   const cs = getComputedStyle(el);
   const v = n => cs.getPropertyValue(n).trim();
   return {
-    accent: v('--accent') || '#e08a3c',
-    ink: v('--ink') || '#eee',
-    ink3: v('--ink-3') || '#888',
-    border: v('--border') || '#333',
-    surface: v('--surface') || '#222',
+    accent: v('--accent') || '#D18266',
+    ink: v('--ink') || '#364042',
+    ink3: v('--ink-3') || '#626B6D',
+    border: v('--border') || '#DEDCD0',
+    surface: v('--surface') || '#FFFFFF',
+    // glows belong on a dark surface; light themes damp them right down
+    glow: parseFloat(v('--fx-glow')) || 0,
   };
 }
 
@@ -1938,7 +1943,7 @@ function drawDot(ctx, cx, cy, r, hitCount, legCount, c, pop) {
     ctx.fillStyle = c.accent;
     ctx.globalAlpha = Math.min(1, 0.85 + pop);
     ctx.shadowColor = c.accent;
-    ctx.shadowBlur = 8 + pop * 14;
+    ctx.shadowBlur = (8 + pop * 14) * c.glow;
   } else {
     ctx.fillStyle = c.ink3;
     ctx.globalAlpha = 0.14 + frac * 0.3;

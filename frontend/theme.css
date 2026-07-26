@@ -1,170 +1,199 @@
 /* ── Ball Don't Lie — theme tokens ─────────────────────────────────────────
-   Four palettes selected via [data-theme] on <html>. Graphite is default.
-   Every surface, ink, accent, and graph color routes through these vars. */
+   Built on the Blue Nova palette: periwinkle #5B6D92, pale blue #D5E3E6,
+   sand #F0E2D2, off-white #EFEEE5, terracotta #D18266, slate text #364042.
+
+   Every text pair below was checked against WCAG AA (4.5:1 body, 3:1 large).
+   Two results drove the token design:
+     · white on terracotta is only 2.96:1 — it fails even for large text, so
+       buttons use a deep brown ink on terracotta instead of white.
+     · periwinkle at full strength is 4.46:1 on the canvas, just under the
+       line, so text uses the deepened #4C5C7C and the raw hue is reserved
+       for fills, icons and graph marks.
+
+   --fx-glow scales the glow effects (graph nodes, simulation dots) that only
+   belong on a dark surface; light themes damp them to a whisper. */
 
 :root{
-  color-scheme:dark;
-  --bg:oklch(0.165 0.012 265);
-  --surface:oklch(0.205 0.012 265);
-  --surface-2:oklch(0.255 0.012 265);
-  --ink:oklch(0.93 0.005 80);
-  --ink-2:oklch(0.73 0.008 80);
-  --ink-3:oklch(0.60 0.008 80);
-  --border:oklch(0.30 0.012 265);
-  --border-strong:oklch(0.40 0.012 265);
-  --accent:oklch(0.72 0.15 55);
-  --accent-ink:oklch(0.78 0.13 60);
-  --accent-soft:oklch(0.27 0.045 55);
-  --accent-contrast:oklch(0.17 0.02 55);
-  --accent-edge:oklch(0.42 0.07 55);
-  --focus-ring:oklch(0.72 0.15 55 / 0.25);
-  --green:oklch(0.74 0.13 155);
-  --live-edge:oklch(0.42 0.07 155);
-  --warn-bg:oklch(0.26 0.04 85);
-  --warn-ink:oklch(0.80 0.09 85);
-  --danger:oklch(0.70 0.16 25);
-  --danger-soft:oklch(0.28 0.04 25);
-  /* graph */
-  --graph-node-stroke:oklch(0.36 0.012 265);
-  --graph-track:oklch(0.29 0.012 265);
-  --graph-label:oklch(0.90 0.005 80);
-  --graph-value:oklch(0.66 0.008 80);
-  --graph-edge:oklch(0.80 0.008 80);
-  --graph-glow:oklch(0.72 0.15 55 / 0.14);
-  --cat-historical:#8FA6CE;
-  --cat-trend:#E3A36C;
-  --cat-matchup:#8FC7A4;
-  --cat-situational:#9BA1AC;
-  --cat-derived:#A0AEDF;
-  --cat-advanced:#8FCCC2;
-  --cat-meta:#C5A8C8;
-  /* court backdrop */
-  --court-line:oklch(0.42 0.05 55 / 0.55);
-  --court-glow:oklch(0.72 0.15 55 / 0.30);
-  --landing-glow:oklch(0.72 0.15 55 / 0.07);
-}
-
-/* Midnight — deep indigo, violet accent */
-:root[data-theme="midnight"]{
-  color-scheme:dark;
-  --bg:oklch(0.16 0.03 290);
-  --surface:oklch(0.20 0.032 290);
-  --surface-2:oklch(0.25 0.034 290);
-  --ink:oklch(0.93 0.01 290);
-  --ink-2:oklch(0.74 0.015 290);
-  --ink-3:oklch(0.61 0.02 290);
-  --border:oklch(0.30 0.035 290);
-  --border-strong:oklch(0.40 0.04 290);
-  --accent:oklch(0.72 0.16 305);
-  --accent-ink:oklch(0.79 0.13 305);
-  --accent-soft:oklch(0.27 0.06 305);
-  --accent-contrast:oklch(0.16 0.04 305);
-  --accent-edge:oklch(0.43 0.09 305);
-  --focus-ring:oklch(0.72 0.16 305 / 0.25);
-  --green:oklch(0.74 0.13 160);
-  --live-edge:oklch(0.42 0.07 160);
-  --warn-bg:oklch(0.26 0.04 85);
-  --warn-ink:oklch(0.80 0.09 85);
-  --danger:oklch(0.70 0.16 20);
-  --danger-soft:oklch(0.28 0.04 20);
-  --graph-node-stroke:oklch(0.37 0.04 290);
-  --graph-track:oklch(0.29 0.035 290);
-  --graph-label:oklch(0.90 0.01 290);
-  --graph-value:oklch(0.67 0.015 290);
-  --graph-edge:oklch(0.82 0.02 290);
-  --graph-glow:oklch(0.72 0.16 305 / 0.15);
-  --cat-historical:#93A8DC;
-  --cat-trend:#E0A0D2;
-  --cat-matchup:#8FC7B8;
-  --cat-situational:#9DA2BC;
-  --cat-derived:#A8AAEE;
-  --cat-advanced:#8FC4DA;
-  --cat-meta:#CBA4DC;
-  --court-line:oklch(0.44 0.08 305 / 0.55);
-  --court-glow:oklch(0.72 0.16 305 / 0.32);
-  --landing-glow:oklch(0.72 0.16 305 / 0.08);
-}
-
-/* Emerald — green-tinted graphite, mint accent */
-:root[data-theme="emerald"]{
-  color-scheme:dark;
-  --bg:oklch(0.155 0.018 175);
-  --surface:oklch(0.195 0.02 175);
-  --surface-2:oklch(0.245 0.022 175);
-  --ink:oklch(0.93 0.006 160);
-  --ink-2:oklch(0.74 0.01 160);
-  --ink-3:oklch(0.61 0.012 160);
-  --border:oklch(0.29 0.024 175);
-  --border-strong:oklch(0.39 0.028 175);
-  --accent:oklch(0.77 0.13 162);
-  --accent-ink:oklch(0.80 0.12 162);
-  --accent-soft:oklch(0.26 0.05 168);
-  --accent-contrast:oklch(0.16 0.03 168);
-  --accent-edge:oklch(0.44 0.08 165);
-  --focus-ring:oklch(0.77 0.13 162 / 0.25);
-  --green:oklch(0.77 0.13 162);
-  --live-edge:oklch(0.44 0.08 162);
-  --warn-bg:oklch(0.26 0.04 85);
-  --warn-ink:oklch(0.80 0.09 85);
-  --danger:oklch(0.70 0.16 25);
-  --danger-soft:oklch(0.28 0.04 25);
-  --graph-node-stroke:oklch(0.36 0.03 175);
-  --graph-track:oklch(0.28 0.026 175);
-  --graph-label:oklch(0.90 0.008 160);
-  --graph-value:oklch(0.67 0.012 160);
-  --graph-edge:oklch(0.82 0.015 160);
-  --graph-glow:oklch(0.77 0.13 162 / 0.14);
-  --cat-historical:#8FB4CE;
-  --cat-trend:#E3B36C;
-  --cat-matchup:#8FD2A8;
-  --cat-situational:#96A8A2;
-  --cat-derived:#9FBEE0;
-  --cat-advanced:#8FD2C8;
-  --cat-meta:#BCA8CE;
-  --court-line:oklch(0.44 0.07 165 / 0.55);
-  --court-glow:oklch(0.77 0.13 162 / 0.30);
-  --landing-glow:oklch(0.77 0.13 162 / 0.07);
-}
-
-/* Daylight — clean light mode, brand orange accent */
-:root[data-theme="daylight"]{
   color-scheme:light;
-  --bg:oklch(0.985 0.002 80);
+  --bg:#EFEEE5;
   --surface:#FFFFFF;
-  --surface-2:oklch(0.965 0.003 80);
-  --ink:oklch(0.23 0.012 260);
-  --ink-2:oklch(0.44 0.012 260);
-  --ink-3:oklch(0.54 0.012 260);
-  --border:oklch(0.915 0.004 80);
-  --border-strong:oklch(0.85 0.006 80);
-  --accent:oklch(0.62 0.145 55);
-  --accent-ink:oklch(0.51 0.13 55);
-  --accent-soft:oklch(0.955 0.022 55);
-  --accent-contrast:#FFFFFF;
-  --accent-edge:oklch(0.86 0.05 55);
-  --focus-ring:oklch(0.62 0.145 55 / 0.15);
-  --green:oklch(0.58 0.12 155);
-  --live-edge:oklch(0.80 0.07 155);
-  --warn-bg:oklch(0.95 0.035 85);
-  --warn-ink:oklch(0.46 0.09 75);
-  --danger:oklch(0.54 0.18 25);
-  --danger-soft:oklch(0.95 0.02 25);
-  --graph-node-stroke:oklch(0.89 0.006 80);
-  --graph-track:oklch(0.93 0.004 80);
-  --graph-label:oklch(0.30 0.012 260);
-  --graph-value:oklch(0.50 0.012 260);
-  --graph-edge:oklch(0.40 0.012 260);
-  --graph-glow:oklch(0.62 0.145 55 / 0.09);
-  --cat-historical:#5C6E96;
-  --cat-trend:#B06A2C;
-  --cat-matchup:#4F8563;
-  --cat-situational:#6E747E;
-  --cat-derived:#5F6FA8;
-  --cat-advanced:#3E837A;
-  --cat-meta:#8A6E92;
-  --court-line:oklch(0.82 0.04 55 / 0.8);
-  --court-glow:oklch(0.62 0.145 55 / 0.18);
-  --landing-glow:oklch(0.62 0.145 55 / 0.09);
+  --surface-2:#E7E8DF;
+  --ink:#364042;
+  --ink-2:#576063;
+  --ink-3:#626B6D;
+  --border:#DEDCD0;
+  --border-strong:#C9C8BA;
+  --accent:#D18266;
+  --accent-ink:#9E5238;
+  --accent-soft:#F7E9E2;
+  --accent-contrast:#3A241C;
+  --accent-edge:#E2B5A3;
+  --primary:#5B6D92;
+  --primary-ink:#4C5C7C;
+  --focus-ring:rgb(209 130 102 / 0.30);
+  --green:#4F7A5C;
+  --live-edge:#A9C4B1;
+  --warn-bg:#F5EBD8;
+  --warn-ink:#7D5F24;
+  --danger:#A8412B;
+  --danger-soft:#F6E4DF;
+  --shadow-1:0 2px 8px rgb(54 64 66 / 0.06);
+  --shadow-2:0 10px 28px rgb(54 64 66 / 0.12);
+  --fx-glow:0.25;
+  --graph-node-stroke:#DEDCD0;
+  --graph-track:#E7E8DF;
+  --graph-label:#364042;
+  --graph-value:#576063;
+  --graph-edge:#8A918D;
+  --graph-glow:rgb(209 130 102 / 0.16);
+  --cat-historical:#5B6D92;
+  --cat-trend:#C0714E;
+  --cat-matchup:#5C8468;
+  --cat-situational:#7E837C;
+  --cat-derived:#6D7FA8;
+  --cat-advanced:#4F7F86;
+  --cat-meta:#8B7391;
+  --court-line:rgb(91 109 146 / 0.30);
+  --court-glow:transparent;
+  --landing-glow:rgb(209 130 102 / 0.07);
+}
+
+/* Sand — the warm neutral carries the canvas */
+:root[data-theme="sand"]{
+  color-scheme:light;
+  --bg:#F0E2D2;
+  --surface:#FDF9F4;
+  --surface-2:#EFE3D6;
+  --ink:#364042;
+  --ink-2:#575E5B;
+  --ink-3:#5C625F;
+  --border:#E0CFBC;
+  --border-strong:#CBB69F;
+  --accent:#D18266;
+  --accent-ink:#94492F;
+  --accent-soft:#F8E7DC;
+  --accent-contrast:#3A241C;
+  --accent-edge:#DFAF97;
+  --primary:#5B6D92;
+  --primary-ink:#48577A;
+  --focus-ring:rgb(209 130 102 / 0.30);
+  --green:#4B7458;
+  --live-edge:#B3C6B8;
+  --warn-bg:#F3E5C9;
+  --warn-ink:#775A20;
+  --danger:#A03D28;
+  --danger-soft:#F5DED6;
+  --shadow-1:0 2px 8px rgb(74 58 42 / 0.07);
+  --shadow-2:0 10px 28px rgb(74 58 42 / 0.14);
+  --fx-glow:0.25;
+  --graph-node-stroke:#E0CFBC;
+  --graph-track:#EFE3D6;
+  --graph-label:#364042;
+  --graph-value:#575E5B;
+  --graph-edge:#8C8477;
+  --graph-glow:rgb(209 130 102 / 0.18);
+  --cat-historical:#5B6D92;
+  --cat-trend:#B96945;
+  --cat-matchup:#557E61;
+  --cat-situational:#7B7A70;
+  --cat-derived:#6A7CA5;
+  --cat-advanced:#4C7B82;
+  --cat-meta:#856D8B;
+  --court-line:rgb(91 109 146 / 0.28);
+  --court-glow:transparent;
+  --landing-glow:rgb(209 130 102 / 0.08);
+}
+
+/* Mist — Blue Nova's pale blue as the canvas */
+:root[data-theme="mist"]{
+  color-scheme:light;
+  --bg:#E3ECEE;
+  --surface:#FFFFFF;
+  --surface-2:#DAE6E9;
+  --ink:#364042;
+  --ink-2:#566063;
+  --ink-3:#616B6E;
+  --border:#CFDEE1;
+  --border-strong:#B3C7CB;
+  --accent:#D18266;
+  --accent-ink:#9E5238;
+  --accent-soft:#F7E7E0;
+  --accent-contrast:#3A241C;
+  --accent-edge:#DFB09C;
+  --primary:#5B6D92;
+  --primary-ink:#4C5C7C;
+  --focus-ring:rgb(91 109 146 / 0.28);
+  --green:#4F7A5C;
+  --live-edge:#A2C0AC;
+  --warn-bg:#F2E8D4;
+  --warn-ink:#7A5C22;
+  --danger:#A8412B;
+  --danger-soft:#F4E0DA;
+  --shadow-1:0 2px 8px rgb(40 60 66 / 0.07);
+  --shadow-2:0 10px 28px rgb(40 60 66 / 0.14);
+  --fx-glow:0.25;
+  --graph-node-stroke:#CFDEE1;
+  --graph-track:#DAE6E9;
+  --graph-label:#364042;
+  --graph-value:#566063;
+  --graph-edge:#7E8C90;
+  --graph-glow:rgb(91 109 146 / 0.16);
+  --cat-historical:#4F6389;
+  --cat-trend:#BC6C49;
+  --cat-matchup:#4F7F62;
+  --cat-situational:#77807F;
+  --cat-derived:#6478A4;
+  --cat-advanced:#417880;
+  --cat-meta:#836D8A;
+  --court-line:rgb(76 92 124 / 0.26);
+  --court-glow:transparent;
+  --landing-glow:rgb(91 109 146 / 0.08);
+}
+
+/* Dusk — the palette's own slate, for night use. Muted, not neon. */
+:root[data-theme="dusk"]{
+  color-scheme:dark;
+  --bg:#2B3335;
+  --surface:#364042;
+  --surface-2:#414C4E;
+  --ink:#EFEEE5;
+  --ink-2:#B9BEBB;
+  --ink-3:#A6ADAC;
+  --border:#475254;
+  --border-strong:#5C6769;
+  --accent:#D18266;
+  --accent-ink:#E09A80;
+  --accent-soft:#4A3A34;
+  --accent-contrast:#2E1A13;
+  --accent-edge:#7A5344;
+  --primary:#93A5CC;
+  --primary-ink:#A8B7D6;
+  --focus-ring:rgb(209 130 102 / 0.32);
+  --green:#7FAE8C;
+  --live-edge:#4E6B58;
+  --warn-bg:#4A4230;
+  --warn-ink:#DCC58A;
+  --danger:#D9705A;
+  --danger-soft:#4A322C;
+  --shadow-1:0 2px 8px rgb(0 0 0 / 0.25);
+  --shadow-2:0 10px 28px rgb(0 0 0 / 0.40);
+  --fx-glow:1;
+  --graph-node-stroke:#4E595B;
+  --graph-track:#414C4E;
+  --graph-label:#EFEEE5;
+  --graph-value:#B9BEBB;
+  --graph-edge:#C3C8C5;
+  --graph-glow:rgb(209 130 102 / 0.20);
+  --cat-historical:#93A5CC;
+  --cat-trend:#E0A184;
+  --cat-matchup:#8FBE9C;
+  --cat-situational:#A2A9A7;
+  --cat-derived:#9DAAD4;
+  --cat-advanced:#7FB3BA;
+  --cat-meta:#BFA3C4;
+  --court-line:rgb(147 165 204 / 0.34);
+  --court-glow:rgb(209 130 102 / 0.26);
+  --landing-glow:rgb(209 130 102 / 0.09);
 }
 
 /* ── Theme picker ── */
@@ -187,7 +216,7 @@
   background:var(--surface);
   border:1px solid var(--border);
   border-radius:12px;
-  box-shadow:0 12px 32px oklch(0 0 0 / 0.35);
+  box-shadow:var(--shadow-2);
   min-width:170px;
 }
 #themePopover::backdrop{background:transparent;}
@@ -211,7 +240,7 @@
 .theme-check{visibility:hidden;color:var(--accent-ink);font-size:0.9rem;}
 .theme-option.active .theme-check{visibility:visible;}
 
-/* ── Holographic court backdrop ── */
+/* ── Court backdrop ── */
 .court-layer{
   position:absolute;
   inset:0;
@@ -228,12 +257,11 @@
   opacity:0.5;
   animation:courtPulse 9s ease-in-out infinite alternate;
 }
-.court-layer.quiet svg{opacity:0.28;}
+.court-layer.quiet svg{opacity:0.28;animation:none;}
 @keyframes courtPulse{
   from{opacity:0.38}
   to{opacity:0.6}
 }
-.court-layer.quiet svg{animation:none;}
 @media (prefers-reduced-motion: reduce){
   .court-layer svg{animation:none;}
 }

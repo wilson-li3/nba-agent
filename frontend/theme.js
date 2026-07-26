@@ -2,10 +2,10 @@
    Colors switch live because every color routes through CSS vars. */
 
 const BDL_THEMES = [
-  { id: '',         label: 'Graphite', swatch: ['oklch(0.165 0.012 265)', 'oklch(0.72 0.15 55)'] },
-  { id: 'midnight', label: 'Midnight', swatch: ['oklch(0.16 0.03 290)',  'oklch(0.72 0.16 305)'] },
-  { id: 'emerald',  label: 'Emerald',  swatch: ['oklch(0.155 0.018 175)', 'oklch(0.77 0.13 162)'] },
-  { id: 'daylight', label: 'Daylight', swatch: ['oklch(0.985 0.002 80)', 'oklch(0.62 0.145 55)'] },
+  { id: '',      label: 'Blue Nova', swatch: ['#EFEEE5', '#5B6D92', '#D18266'] },
+  { id: 'sand',  label: 'Sand',      swatch: ['#F0E2D2', '#5B6D92', '#D18266'] },
+  { id: 'mist',  label: 'Mist',      swatch: ['#D5E3E6', '#5B6D92', '#D18266'] },
+  { id: 'dusk',  label: 'Dusk',      swatch: ['#364042', '#93A5CC', '#D18266'] },
 ];
 
 function bdlSetTheme(id) {
@@ -36,6 +36,7 @@ function initThemePicker(mount) {
       <span class="theme-swatch">
         <span style="background:${t.swatch[0]}"></span>
         <span style="background:${t.swatch[1]}"></span>
+        <span style="background:${t.swatch[2]}"></span>
       </span>
       <span class="theme-name">${t.label}</span>
       <iconify-icon class="theme-check" icon="tabler:check"></iconify-icon>
