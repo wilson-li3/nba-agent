@@ -786,8 +786,18 @@ iconify-icon{display:inline-block;vertical-align:-0.125em;}
   background:var(--surface-2);
   overflow:hidden;
 }
-#simCanvas{display:block;width:100%;height:165px;}
+#simCanvas{display:block;width:100%;height:178px;}
 .sim-head{padding:11px 13px 0;}
+.sim-legend{
+  display:flex;gap:14px;padding:0 13px 10px;
+  font-size:0.68rem;color:var(--ink-3);
+}
+.sim-legend span{display:inline-flex;align-items:center;gap:5px;}
+.sim-legend .dot{
+  width:7px;height:7px;border-radius:50%;
+  background:var(--ink-3);opacity:0.35;display:inline-block;
+}
+.sim-legend .dot.won{background:var(--accent);opacity:1;box-shadow:0 0 6px var(--accent);}
 .sim-readout-prob{
   font-size:1.5rem;font-weight:700;letter-spacing:-0.02em;
   color:var(--ink);font-variant-numeric:tabular-nums;line-height:1.1;
@@ -833,6 +843,17 @@ iconify-icon{display:inline-block;vertical-align:-0.125em;}
   padding:10px 12px;background:var(--surface-2);border-radius:10px;
 }
 .sim-note b{color:var(--ink);font-variant-numeric:tabular-nums;}
+.sim-analysis{
+  padding:11px 13px;border:1px solid var(--accent-edge);border-radius:10px;
+  background:var(--accent-soft);
+}
+.sim-analysis .sim-block-title{
+  display:flex;align-items:center;gap:5px;color:var(--accent-ink);margin-bottom:6px;
+}
+.sim-analysis p{font-size:0.79rem;line-height:1.6;color:var(--ink);text-wrap:pretty;}
+.sim-sources{margin-top:7px;font-size:0.7rem;color:var(--ink-3);}
+.sim-sources a{color:var(--accent-ink);text-decoration:none;}
+.sim-sources a:hover{text-decoration:underline;}
 
 .sim-block-title{
   font-size:0.72rem;font-weight:600;color:var(--ink-3);
@@ -1819,67 +1840,86 @@ function fitCanvas(canvas) {
   return { ctx, w: rect.width, h: rect.height };
 }
 
-function drawSimGrid(ctx, w, h, c) {
-  ctx.clearRect(0, 0, w, h);
-  ctx.save();
-  ctx.strokeStyle = c.border;
-  ctx.globalAlpha = 0.75;
-  ctx.lineWidth = 1;
-  ctx.setLineDash([2, 4]);
-  for (let i = 0; i <= 4; i++) {
-    const y = 18 + (h - 40) * (i / 4);
-    ctx.beginPath();
-    ctx.moveTo(34, y);
-    ctx.lineTo(w - 10, y);
-    ctx.stroke();
+function simDotLayout(w, h, count) {
+  const pad = 12;
+  const aw = w - pad * 2, ah = h - pad * 2;
+  let best = { cols: 10, rows: Math.ceil(count / 10), size: 0 };
+  for (let cols = 10; cols <= 40; cols++) {
+    const rows = Math.ceil(count / cols);
+    const size = Math.min(aw / cols, ah / rows);
+    if (size > best.size) best = { cols, rows, size };
   }
-  ctx.restore();
+  const gw = best.cols * best.size, gh = best.rows * best.size;
+  return { ...best, x0: (w - gw) / 2, y0: (h - gh) / 2 };
+}
+
+// One dot per simulated slate. Bright = the whole slip cashed; dim = it didn't.
+// Seeing the outcomes as a field reads the probability far better than a
+// convergence line, which just goes flat after a few hundred trials.
+function drawDot(ctx, cx, cy, r, hitCount, legCount, c, pop) {
+  const won = hitCount === legCount;
+  const frac = legCount ? hitCount / legCount : 0;
+  const radius = r * (won ? 0.42 : 0.30) * (1 + pop * 0.8);
   ctx.save();
-  ctx.fillStyle = c.ink3;
-  ctx.font = '9px "IBM Plex Sans", system-ui, sans-serif';
-  ctx.textAlign = 'right';
-  for (let i = 0; i <= 4; i++) {
-    const y = 18 + (h - 40) * (i / 4);
-    ctx.fillText(`${100 - i * 25}%`, 28, y + 3);
+  if (won) {
+    ctx.fillStyle = c.accent;
+    ctx.globalAlpha = Math.min(1, 0.85 + pop);
+    ctx.shadowColor = c.accent;
+    ctx.shadowBlur = 8 + pop * 14;
+  } else {
+    ctx.fillStyle = c.ink3;
+    ctx.globalAlpha = 0.14 + frac * 0.3;
   }
+  ctx.beginPath();
+  ctx.arc(cx, cy, Math.max(0.7, radius), 0, Math.PI * 2);
+  ctx.fill();
   ctx.restore();
 }
 
-// Indeterminate phase — runs while the request is in flight
+function drawDotField(ctx, w, h, c, sample, shown, legCount, popFrom) {
+  ctx.clearRect(0, 0, w, h);
+  const L = simDotLayout(w, h, sample.length);
+  for (let i = 0; i < shown; i++) {
+    const col = i % L.cols, row = Math.floor(i / L.cols);
+    const cx = L.x0 + col * L.size + L.size / 2;
+    const cy = L.y0 + row * L.size + L.size / 2;
+    const age = shown - i;
+    const pop = age < 10 ? (1 - age / 10) : 0;
+    drawDot(ctx, cx, cy, L.size, sample[i], legCount, c, popFrom ? pop : 0);
+  }
+  return L;
+}
+
+// Placeholder field that breathes while the request is in flight
 function startWarmup(canvas) {
   const c = simColors(canvas);
+  const stages = [
+    'pricing legs from game logs…',
+    'reading recent news…',
+    'measuring leg correlation…',
+    'running 50,000 trials…',
+  ];
   let t = 0;
   const step = () => {
     const { ctx, w, h } = fitCanvas(canvas);
-    drawSimGrid(ctx, w, h, c);
+    ctx.clearRect(0, 0, w, h);
     t += 0.016;
-    const x0 = 34, x1 = w - 10;
-    const sweep = x0 + ((t * 0.55) % 1) * (x1 - x0);
-    // scanning beam
-    const grad = ctx.createLinearGradient(sweep - 70, 0, sweep, 0);
-    grad.addColorStop(0, 'transparent');
-    grad.addColorStop(1, c.accent);
-    ctx.save();
-    ctx.globalAlpha = 0.5;
-    ctx.strokeStyle = grad;
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(Math.max(x0, sweep - 70), h / 2);
-    ctx.lineTo(sweep, h / 2);
-    ctx.stroke();
-    ctx.restore();
-    // unsettled probability cloud
-    ctx.save();
-    ctx.fillStyle = c.accent;
-    for (let i = 0; i < 26; i++) {
-      const px = x0 + ((i * 37 + t * 90) % (x1 - x0));
-      const py = h / 2 + Math.sin(t * 2.2 + i) * (h * 0.26);
-      ctx.globalAlpha = 0.10 + 0.2 * Math.abs(Math.sin(t * 1.7 + i));
+    const L = simDotLayout(w, h, 300);
+    for (let i = 0; i < 300; i++) {
+      const col = i % L.cols, row = Math.floor(i / L.cols);
+      const cx = L.x0 + col * L.size + L.size / 2;
+      const cy = L.y0 + row * L.size + L.size / 2;
+      const wave = Math.sin(t * 2.4 - (col + row) * 0.28);
+      ctx.save();
+      ctx.fillStyle = c.ink3;
+      ctx.globalAlpha = 0.07 + Math.max(0, wave) * 0.16;
       ctx.beginPath();
-      ctx.arc(px, py, 1.7, 0, Math.PI * 2);
+      ctx.arc(cx, cy, L.size * 0.22, 0, Math.PI * 2);
       ctx.fill();
+      ctx.restore();
     }
-    ctx.restore();
+    const el = document.getElementById('simTrials');
+    if (el) el.textContent = stages[Math.min(stages.length - 1, Math.floor(t / 1.1))];
     simState.raf = requestAnimationFrame(step);
   };
   simState.raf = requestAnimationFrame(step);
@@ -1890,124 +1930,54 @@ function stopSimAnim() {
   simState.raf = null;
 }
 
-// Draws the real convergence path: the running MC estimate settling down
-function playConvergence(canvas, data) {
+// Fills the field dot by dot while the readout ticks through the real
+// running estimate returned by the simulation.
+function playDotMatrix(canvas, data) {
   stopSimAnim();
   return new Promise(resolve => {
+    const sample = data.sample_outcomes || [];
     const conv = data.convergence || [];
+    const legCount = data.parlay.leg_count;
     const finalProb = data.parlay.sim_prob;
     const probEl = document.getElementById('simProb');
     const trialsEl = document.getElementById('simTrials');
-    if (!conv.length) {
-      if (probEl) probEl.textContent = `${(finalProb * 100).toFixed(1)}%`;
-      if (trialsEl) trialsEl.textContent = `${data.trials.toLocaleString()} simulations`;
-      return resolve();
-    }
-    if (REDUCED_MOTION) {
+
+    const settle = () => {
       const { ctx, w, h } = fitCanvas(canvas);
-      const c = simColors(canvas);
-      drawSimGrid(ctx, w, h, c);
-      drawConvergencePath(ctx, w, h, c, conv, conv.length - 1, finalProb);
+      drawDotField(ctx, w, h, simColors(canvas), sample, sample.length, legCount, false);
       if (probEl) probEl.textContent = `${(finalProb * 100).toFixed(1)}%`;
-      if (trialsEl) trialsEl.textContent = `${data.trials.toLocaleString()} simulations`;
-      return resolve();
-    }
+      if (trialsEl) trialsEl.textContent = `${data.trials.toLocaleString()} simulations · settled`;
+    };
+
+    if (!sample.length || REDUCED_MOTION) { settle(); return resolve(); }
 
     const c = simColors(canvas);
-    const DURATION = 1500;
+    const DURATION = 3200;
     const start = performance.now();
-    const particles = [];
-
     const step = (now) => {
       const raw = Math.min(1, (now - start) / DURATION);
-      const t = 1 - Math.pow(1 - raw, 3); // ease-out cubic
-      const idx = Math.min(conv.length - 1, Math.floor(t * (conv.length - 1)));
+      const eased = 1 - Math.pow(1 - raw, 2.2);
+      const shown = Math.max(1, Math.floor(eased * sample.length));
       const { ctx, w, h } = fitCanvas(canvas);
-      drawSimGrid(ctx, w, h, c);
-      const lead = drawConvergencePath(ctx, w, h, c, conv, idx, null);
+      drawDotField(ctx, w, h, c, sample, shown, legCount, true);
 
-      // comet particles trailing the leading edge
-      if (raw < 1 && lead) {
-        for (let i = 0; i < 2; i++) {
-          particles.push({ x: lead.x, y: lead.y, vx: -0.7 - Math.random() * 1.4,
-                           vy: (Math.random() - 0.5) * 1.6, life: 1 });
-        }
+      if (conv.length) {
+        const ci = Math.min(conv.length - 1, Math.floor(eased * (conv.length - 1)));
+        if (probEl) probEl.textContent = `${(conv[ci].prob * 100).toFixed(1)}%`;
+        if (trialsEl) trialsEl.textContent =
+          `${conv[ci].trials.toLocaleString()} of ${data.trials.toLocaleString()} simulations`;
       }
-      ctx.save();
-      ctx.fillStyle = c.accent;
-      for (let i = particles.length - 1; i >= 0; i--) {
-        const pt = particles[i];
-        pt.x += pt.vx; pt.y += pt.vy; pt.life -= 0.035;
-        if (pt.life <= 0) { particles.splice(i, 1); continue; }
-        ctx.globalAlpha = pt.life * 0.55;
-        ctx.beginPath();
-        ctx.arc(pt.x, pt.y, 1.5 * pt.life + 0.4, 0, Math.PI * 2);
-        ctx.fill();
-      }
-      ctx.restore();
-
-      const cur = conv[idx];
-      if (probEl) probEl.textContent = `${(cur.prob * 100).toFixed(1)}%`;
-      if (trialsEl) trialsEl.textContent = `${cur.trials.toLocaleString()} of ${data.trials.toLocaleString()} simulations`;
 
       if (raw < 1) {
         simState.raf = requestAnimationFrame(step);
       } else {
-        const { ctx: c2, w: w2, h: h2 } = fitCanvas(canvas);
-        drawSimGrid(c2, w2, h2, c);
-        drawConvergencePath(c2, w2, h2, c, conv, conv.length - 1, finalProb);
-        if (probEl) probEl.textContent = `${(finalProb * 100).toFixed(1)}%`;
-        if (trialsEl) trialsEl.textContent = `${data.trials.toLocaleString()} simulations · settled`;
+        settle();
         stopSimAnim();
         resolve();
       }
     };
     simState.raf = requestAnimationFrame(step);
   });
-}
-
-function drawConvergencePath(ctx, w, h, c, conv, upto, settleProb) {
-  const x0 = 34, x1 = w - 10, yTop = 18, yBot = h - 22;
-  const px = i => x0 + (x1 - x0) * (i / Math.max(1, conv.length - 1));
-  const py = p => yBot - (yBot - yTop) * Math.min(1, Math.max(0, p));
-
-  if (settleProb != null) {
-    ctx.save();
-    ctx.strokeStyle = c.accent;
-    ctx.globalAlpha = 0.35;
-    ctx.setLineDash([3, 4]);
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(x0, py(settleProb));
-    ctx.lineTo(x1, py(settleProb));
-    ctx.stroke();
-    ctx.restore();
-  }
-
-  ctx.save();
-  ctx.strokeStyle = c.accent;
-  ctx.lineWidth = 2;
-  ctx.lineJoin = 'round';
-  ctx.shadowColor = c.accent;
-  ctx.shadowBlur = 9;
-  ctx.beginPath();
-  for (let i = 0; i <= upto; i++) {
-    const x = px(i), y = py(conv[i].prob);
-    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-  }
-  ctx.stroke();
-  ctx.restore();
-
-  const lx = px(upto), ly = py(conv[upto].prob);
-  ctx.save();
-  ctx.fillStyle = c.accent;
-  ctx.shadowColor = c.accent;
-  ctx.shadowBlur = 12;
-  ctx.beginPath();
-  ctx.arc(lx, ly, 3.4, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.restore();
-  return { x: lx, y: ly };
 }
 
 function simShellHTML() {
@@ -2018,7 +1988,10 @@ function simShellHTML() {
         <div class="sim-readout-sub" id="simTrials">pricing legs · reading news…</div>
       </div>
       <canvas id="simCanvas"></canvas>
-
+      <div class="sim-legend">
+        <span><i class="dot won"></i> whole slip cashed</span>
+        <span><i class="dot"></i> at least one leg missed</span>
+      </div>
     </div>
     <div id="simResults"></div>`;
 }
@@ -2053,7 +2026,7 @@ async function runSimulation() {
       return;
     }
     simState.result = data;
-    await playConvergence(canvas, data);
+    await playDotMatrix(canvas, data);
     renderSimResults(data);
   } catch (err) {
     stopSimAnim();
@@ -2154,6 +2127,15 @@ function renderSimResults(data) {
           <span class="val">${p.ev_per_100 >= 0 ? '+' : '−'}$${Math.abs(p.ev_per_100).toFixed(2)}</span>
         </div>
       </div>
+
+      ${data.analysis ? `<div class="sim-analysis">
+        <div class="sim-block-title"><iconify-icon icon="tabler:file-analytics"></iconify-icon> Analyst read</div>
+        <p>${escapeHtml(data.analysis)}</p>
+        ${(data.sources || []).length ? `<div class="sim-sources">Sources: ${
+          data.sources.map(src => src.url
+            ? `<a href="${escapeHtml(src.url)}" target="_blank" rel="noopener">${escapeHtml(src.source || src.title)}</a>`
+            : escapeHtml(src.source || src.title)).join(' · ')}</div>` : ''}
+      </div>` : ''}
 
       <div class="sim-note">
         This slip needs at least <b>${p.breakeven_odds}</b> to break even. Standard −110 legs
