@@ -931,6 +931,49 @@ body{display:flex;flex-direction:column;}
   .workspace{min-height:70vh;}
   .chat-panel{height:80vh;}
 }
+
+/* ═══ SLIP DISCOVERABILITY ════════════════════════════════════════════════
+   Adding a pick used to only bump a small badge on a tab most people never
+   looked at. The picks column now carries a persistent bar that says where
+   the picks went and what to do next. */
+.picks-panel{display:flex;flex-direction:column;overflow:hidden;}
+.picks-header{position:static;}
+.picks-list{flex:1;overflow-y:auto;min-height:0;}
+.picks-cta-slot{flex-shrink:0;padding:0 12px 12px;}
+
+.picks-cta{
+  width:100%;
+  display:flex;align-items:center;gap:9px;
+  padding:10px 12px;
+  border:1px solid var(--accent-edge);
+  border-radius:10px;
+  background:var(--accent-soft);
+  color:var(--ink);
+  font-family:inherit;font-size:0.78rem;
+  cursor:pointer;text-align:left;
+  animation:ctaRise 0.32s cubic-bezier(0.25,1,0.5,1);
+  transition:border-color 0.15s, transform 0.15s;
+}
+.picks-cta:hover{border-color:var(--accent);transform:translateY(-1px);}
+@keyframes ctaRise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.picks-cta-count{
+  flex-shrink:0;
+  min-width:21px;height:21px;line-height:21px;
+  border-radius:99px;
+  background:var(--accent);color:var(--accent-contrast);
+  font-size:0.72rem;font-weight:700;text-align:center;
+  font-variant-numeric:tabular-nums;
+}
+.picks-cta-text{flex:1;min-width:0;color:var(--ink-2);}
+.picks-cta-go{
+  display:inline-flex;align-items:center;gap:4px;
+  color:var(--accent-ink);font-weight:650;white-space:nowrap;
+}
+
+/* an inactive tab holding picks should pull the eye, not blend in */
+.ws-tab[data-tab="slip"].has-items .ws-tab-badge{
+  background:var(--accent);color:var(--accent-contrast);
+}
 </style>
 </head>
 <body>
@@ -1132,6 +1175,7 @@ function renderApp(data) {
         <span class="picks-count">${currentPicks.length}</span>
       </div>
       <div class="picks-list" id="picksList"></div>
+      <div class="picks-cta-slot" id="picksCta"></div>
     </div>
     <div class="workspace" id="workspace">
       <div class="ws-tabs">
@@ -1176,6 +1220,7 @@ function renderApp(data) {
   renderPicksList();
   renderSliders();
   renderBetSlip();
+  renderPicksCTA();
   selectPick(0);
 }
 
@@ -2185,10 +2230,27 @@ function updateSlipBadge() {
   if (badge) badge.textContent = betSlip.length;
   const tab = document.querySelector('.ws-tab[data-tab="slip"]');
   if (tab) {
+    tab.classList.toggle('has-items', betSlip.length > 0);
     tab.classList.remove('pinged');
     void tab.offsetWidth;
     tab.classList.add('pinged');
   }
+  renderPicksCTA();
+}
+
+// Persistent "your picks went here" bar, docked under the picks list so it
+// sits in the same column as the + buttons the user just clicked.
+function renderPicksCTA() {
+  const el = document.getElementById('picksCta');
+  if (!el) return;
+  if (!betSlip.length) { el.innerHTML = ''; return; }
+  const n = betSlip.length;
+  el.innerHTML = `
+    <button class="picks-cta" onclick="switchTab('slip')">
+      <span class="picks-cta-count">${n}</span>
+      <span class="picks-cta-text">${n === 1 ? 'pick in your slip' : 'picks in your slip'}</span>
+      <span class="picks-cta-go">Review &amp; simulate <iconify-icon icon="tabler:arrow-right"></iconify-icon></span>
+    </button>`;
 }
 
 // ═══ Assistant ════════════════════════════════════════════════════════════
