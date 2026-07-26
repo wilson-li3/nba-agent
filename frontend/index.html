@@ -943,8 +943,8 @@ body{display:flex;flex-direction:column;}
 
 .picks-cta{
   width:100%;
-  display:flex;align-items:center;gap:9px;
-  padding:10px 12px;
+  display:flex;align-items:center;gap:8px;
+  padding:10px 11px;
   border:1px solid var(--accent-edge);
   border-radius:10px;
   background:var(--accent-soft);
@@ -964,7 +964,7 @@ body{display:flex;flex-direction:column;}
   font-size:0.72rem;font-weight:700;text-align:center;
   font-variant-numeric:tabular-nums;
 }
-.picks-cta-text{flex:1;min-width:0;color:var(--ink-2);}
+.picks-cta-text{flex:1;min-width:0;color:var(--ink-2);white-space:nowrap;overflow:hidden;}
 .picks-cta-go{
   display:inline-flex;align-items:center;gap:4px;
   color:var(--accent-ink);font-weight:650;white-space:nowrap;
@@ -974,6 +974,34 @@ body{display:flex;flex-direction:column;}
 .ws-tab[data-tab="slip"].has-items .ws-tab-badge{
   background:var(--accent);color:var(--accent-contrast);
 }
+
+/* one-time pointer at the Slip tab, shown on a user's very first add */
+.ws-tabs{position:relative;z-index:20;}
+.slip-coach{
+  position:absolute;top:calc(100% + 8px);
+  max-width:250px;
+  display:flex;align-items:flex-start;gap:8px;
+  padding:9px 11px;
+  border:1px solid var(--accent-edge);border-radius:10px;
+  background:var(--surface);
+  box-shadow:0 10px 28px oklch(0 0 0 / 0.4);
+  font-size:0.76rem;line-height:1.45;color:var(--ink);
+  cursor:pointer;
+  animation:coachIn 0.35s cubic-bezier(0.25,1,0.5,1);
+}
+.slip-coach::before{
+  content:'';position:absolute;top:-5px;left:18px;
+  width:9px;height:9px;
+  background:var(--surface);
+  border-left:1px solid var(--accent-edge);
+  border-top:1px solid var(--accent-edge);
+  transform:rotate(45deg);
+}
+.slip-coach iconify-icon{color:var(--accent);font-size:1rem;flex-shrink:0;margin-top:1px;}
+.slip-coach b{color:var(--accent-ink);}
+.slip-coach.dismissing{animation:coachOut 0.2s ease forwards;}
+@keyframes coachIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+@keyframes coachOut{to{opacity:0;transform:translateY(-6px)}}
 </style>
 </head>
 <body>
@@ -1607,7 +1635,7 @@ function renderGraph(pick, opts = {}) {
 function toggleSlip(index) {
   const idx = betSlip.indexOf(index);
   if (idx >= 0) betSlip.splice(idx, 1);
-  else betSlip.push(index);
+  else { betSlip.push(index); maybeShowSlipCoach(); }
   simState.result = null;
   renderPicksList();
   renderBetSlip();
@@ -2215,6 +2243,7 @@ function renderSimResults(data) {
 let activeTab = 'analysis';
 function switchTab(tab) {
   activeTab = tab;
+  if (tab === 'slip') dismissSlipCoach();
   document.querySelectorAll('.ws-tab').forEach(t =>
     t.classList.toggle('active', t.dataset.tab === tab));
   document.querySelectorAll('.ws-pane').forEach(p =>
@@ -2238,6 +2267,31 @@ function updateSlipBadge() {
   renderPicksCTA();
 }
 
+// First add ever: point straight at the tab, once, then never again.
+function maybeShowSlipCoach() {
+  try { if (localStorage.getItem('bdl_slip_coached')) return; } catch (e) { return; }
+  const tabs = document.querySelector('.ws-tabs');
+  const tab = document.querySelector('.ws-tab[data-tab="slip"]');
+  if (!tabs || !tab || document.querySelector('.slip-coach')) return;
+
+  const coach = document.createElement('div');
+  coach.className = 'slip-coach';
+  coach.innerHTML = `<iconify-icon icon="tabler:arrow-up"></iconify-icon>
+    <span>Your picks land in the <b>Slip</b>. Open it to run the simulation.</span>`;
+  coach.onclick = () => { dismissSlipCoach(); switchTab('slip'); };
+  tabs.appendChild(coach);
+  coach.style.left = `${tab.offsetLeft}px`;
+  setTimeout(dismissSlipCoach, 9000);
+}
+
+function dismissSlipCoach() {
+  const coach = document.querySelector('.slip-coach');
+  if (!coach) return;
+  try { localStorage.setItem('bdl_slip_coached', '1'); } catch (e) { /* private mode */ }
+  coach.classList.add('dismissing');
+  setTimeout(() => coach.remove(), 200);
+}
+
 // Persistent "your picks went here" bar, docked under the picks list so it
 // sits in the same column as the + buttons the user just clicked.
 function renderPicksCTA() {
@@ -2248,7 +2302,7 @@ function renderPicksCTA() {
   el.innerHTML = `
     <button class="picks-cta" onclick="switchTab('slip')">
       <span class="picks-cta-count">${n}</span>
-      <span class="picks-cta-text">${n === 1 ? 'pick in your slip' : 'picks in your slip'}</span>
+      <span class="picks-cta-text">in slip</span>
       <span class="picks-cta-go">Review &amp; simulate <iconify-icon icon="tabler:arrow-right"></iconify-icon></span>
     </button>`;
 }
