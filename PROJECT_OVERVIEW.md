@@ -65,7 +65,7 @@ User Question
 | File | What It Does |
 |------|-------------|
 | `frontend/index.html` | **The whole app on one screen** — picks list, tabbed Analysis (D3 force graph + weight sliders) / Slip (bet slip, Monte Carlo simulation, bankroll calculator), and the assistant docked on the right at ~38%. |
-| `frontend/theme.css` / `theme.js` | Four-palette theme system (Graphite, Midnight, Emerald, Daylight) plus the holographic court backdrop, switchable from the header. |
+| `frontend/theme.css` / `theme.js` | Theme tokens built on the Blue Nova palette (periwinkle, sand, terracotta, slate) in four variants — Blue Nova, Sand, Mist, Dusk — plus the court backdrop. Every text pair is WCAG AA verified; `--fx-glow` damps the graph/simulation glows on light surfaces. |
 
 ---
 

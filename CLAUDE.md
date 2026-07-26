@@ -22,6 +22,7 @@ python sync_games.py && python sync_players.py && python sync_player_stats.py &&
 - The frontend is one big HTML file with inline JS. To syntax-check it, extract the largest inline `<script>` and run `node --check` on it — this catches errors a screenshot never will.
 - `uvicorn` is usually started **without** `--reload` here; restart it after backend edits or the browser will hit stale routes.
 - `psql` is not on PATH on this machine — use Python (`psycopg2`/`asyncpg`) for ad-hoc DB queries.
+- Colors live only in `frontend/theme.css` (Blue Nova palette, four variants). Never hardcode a color in `index.html` — add a token. Two traps the tokens already solve: white on the terracotta accent is 2.96:1 and fails WCAG even for large text (use `--accent-contrast`), and glow effects must be scaled by `--fx-glow` or they smear on the light themes.
 - Everything lives on one screen at `/` (`frontend/index.html`): picks list, tabbed Analysis/Slip workspace, and the assistant docked right at ~38%. `frontend/betting.html` is now just a redirect to `/`.
 - APIs: `GET /betting/picks`, `POST /betting/simulate {legs:[...]}`, `POST /ask {"question": ...}`.
 
