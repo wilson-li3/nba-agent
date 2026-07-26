@@ -91,7 +91,33 @@ out-of-sample) is the same workflow a real quant shop uses.
 
 ---
 
-## Story 3 — Text-to-SQL with Guardrails
+## Story 3 — The Slip Simulator (copula Monte Carlo)
+
+Naive parlay math multiplies the legs, which assumes independence. That is
+wrong: two props on the same player move together, and everyone in one game
+shares pace and blowout risk.
+
+The fix is a **Gaussian copula**. Each leg keeps its calibrated marginal
+probability `pᵢ` — leg *i* hits when its correlated draw clears
+`Φ⁻¹(1 − pᵢ)` — while shared latent factors (one per game, one per player)
+induce correlation. So the *parlay* number changes but the per-leg numbers
+stay exactly the ones the backtest validated.
+
+Phrases that land:
+- "I didn't want correlation modeling to corrupt the marginals I'd validated,
+  so I used a copula: correlation lives in the dependence structure, not the
+  marginals."
+- "News is applied as a multiplier on the projected mean, translated into a
+  logit-space shift — that way a neutral news read is exactly a no-op instead
+  of quietly perturbing a calibrated number."
+- "The loading animation replays real convergence checkpoints from the
+  simulation, so what you watch settling is the actual running estimate."
+
+Honest caveat to volunteer: the EV figures assume −110 per leg. Real books
+price high-probability props far shorter, so the edge is a model-versus-market
+illustration, not a betting strategy.
+
+## Story 4 — Text-to-SQL with Guardrails
 
 - GPT-4o generates SQL from natural language against a documented schema
   with 15 generation rules (fuzzy name matching, "last N games" patterns,
@@ -102,7 +128,7 @@ out-of-sample) is the same workflow a real quant shop uses.
   timeouts; mutating keywords are blocked at the application level.
   Interviewers care about the failure modes, not the happy path.
 
-## Story 4 — RAG Pipeline
+## Story 5 — RAG Pipeline
 
 - RSS ingestion every 15 minutes → chunking → OpenAI embeddings → pgvector.
 - Cosine similarity with a **recency boost** — news value decays fast, so
@@ -110,7 +136,7 @@ out-of-sample) is the same workflow a real quant shop uses.
 - Answers cite sources. Grounding + citations is the standard enterprise
   RAG pattern and worth naming.
 
-## Story 5 — Systems Design Choices
+## Story 6 — Systems Design Choices
 
 - **Materialized views** precompute hit rates, splits, and defensive
   ratings — chat answers touch pre-aggregated tables, not 1.4M-row scans.

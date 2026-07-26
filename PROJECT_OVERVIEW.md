@@ -38,6 +38,7 @@ User Question
 | `app/services/betting_service.py` | **Conversational betting analysis.** Parses betting intent (prop check, find picks, parlay, game preview), builds and runs 6+ parallel queries, synthesizes with GPT-4o. |
 | `app/services/betting_picks_service.py` | **Structured picks service (no LLM).** Runs the prediction engine over every eligible player, returns calibrated picks with factor attribution and D3 graph data. |
 | `app/services/prediction_engine.py` | **The prediction engine.** Pure-computation probabilistic model: EWMA mean projection, variance model, context adjustments, shrinkage, Platt calibration. Same code path in the live API and the backtest. |
+| `app/services/simulation_service.py` | **Slip simulator.** Prices each leg with the engine, shifts it by an LLM read of recent news, then runs a 50k-trial Gaussian-copula Monte Carlo so correlated legs aren't multiplied as independent. Returns break-even odds, EV, convergence data. |
 | `backtest.py` | **Walk-forward backtester.** Replays four seasons with zero lookahead leakage; reports Brier score, log loss, calibration tables, simulated ROI. |
 
 ### Prompts (LLM instructions)
@@ -63,8 +64,8 @@ User Question
 
 | File | What It Does |
 |------|-------------|
-| `frontend/index.html` | Main chat interface — hero input, live scores ticker, headlines ticker, message rendering with markdown + citations. |
-| `frontend/betting.html` | 3-column betting dashboard — picks list, D3 force graph, bet slip with parlay builder. |
+| `frontend/index.html` | **The whole app on one screen** — picks list, tabbed Analysis (D3 force graph + weight sliders) / Slip (bet slip, Monte Carlo simulation, bankroll calculator), and the assistant docked on the right at ~38%. |
+| `frontend/theme.css` / `theme.js` | Four-palette theme system (Graphite, Midnight, Emerald, Daylight) plus the holographic court backdrop, switchable from the header. |
 
 ---
 
@@ -111,6 +112,18 @@ The betting picks page (`/betting/picks`) is powered by a **calibrated probabili
 Only shows picks where the player's team plays today (when there are games), the player has 10+ games and ~15+ projected minutes, and the calibrated probability ≥ 70%. Top 12 by probability.
 
 ---
+
+## The Slip Simulation — How It Works
+
+Add picks to the slip and hit **Run Simulation**. Three signals combine:
+
+1. **Past data** — every leg is priced by the calibrated engine above.
+2. **News** — recent articles are pulled per player via pgvector similarity and read by an LLM into a mean multiplier (injury doubt, a teammate out, minutes restriction). The multiplier is applied in logit space, so a neutral read leaves the calibrated probability untouched.
+3. **Correlation** — legs are simulated jointly with a **Gaussian copula**: leg *i* hits when its correlated standard-normal draw clears `Φ⁻¹(1 − pᵢ)`. Same-game legs correlate at 0.10, two props on one player at 0.35. This preserves every leg's validated marginal probability while fixing the naive "multiply the legs" assumption.
+
+Output: true parlay probability, the **break-even odds you need to be profitable**, what a book actually pays at −110 per leg, expected value per $100, a legs-hit histogram, and per-leg attribution showing how news moved each price.
+
+The animation replays the **real** running MC estimate — the backend returns convergence checkpoints, and the canvas draws the curve settling with a comet trail. It is not a fake progress bar.
 
 ## The D3 Force Graph — How It Works
 

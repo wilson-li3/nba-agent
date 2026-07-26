@@ -19,8 +19,11 @@ python sync_games.py && python sync_players.py && python sync_player_stats.py &&
 
 - Requires `DATABASE_URL` and `OPENAI_API_KEY` in `.env` (see `.env.example`).
 - No test suite or linter is configured. Verification is: run the backtest CLI, hit endpoints with curl, and load the frontend pages.
+- The frontend is one big HTML file with inline JS. To syntax-check it, extract the largest inline `<script>` and run `node --check` on it — this catches errors a screenshot never will.
+- `uvicorn` is usually started **without** `--reload` here; restart it after backend edits or the browser will hit stale routes.
 - `psql` is not on PATH on this machine — use Python (`psycopg2`/`asyncpg`) for ad-hoc DB queries.
-- Betting page: `http://localhost:8000/static/betting.html`. Picks API: `GET /betting/picks`. Chat: `POST /ask {"question": ...}`.
+- Everything lives on one screen at `/` (`frontend/index.html`): picks list, tabbed Analysis/Slip workspace, and the assistant docked right at ~38%. `frontend/betting.html` is now just a redirect to `/`.
+- APIs: `GET /betting/picks`, `POST /betting/simulate {legs:[...]}`, `POST /ask {"question": ...}`.
 
 ## Git conventions (user requirement)
 
@@ -47,7 +50,9 @@ Rules when touching this area:
 - `backtest.py` must stay leakage-free: every input (defense ratings, league averages, splits) is computed strictly to-date; same-day games fold into rolling state only after the day rolls over.
 - If you change engine math, refit calibration on the train seasons and re-validate on held-out seasons before baking in new constants. Parameter sweeps: pass `params=` and preloaded `rows=` to `run_backtest()` (a season loads once, runs in ~3s).
 
-`app/services/betting_picks_service.py` (powers `/betting/picks`) loads the latest season's logs in one query, builds per-player histories and to-date defense factors in Python, and runs the engine per player. Its response shape (factor keys, graph nodes/edges) is mirrored by hardcoded constants in `frontend/betting.html` (`FACTOR_ORDER`, `FACTOR_LABELS`, `userWeights`) — change both together. Every graph node must be a real model quantity; decorative/fake nodes were deliberately removed.
+`app/services/betting_picks_service.py` (powers `/betting/picks`) loads the latest season's logs in one query, builds per-player histories and to-date defense factors in Python, and runs the engine per player. Its response shape (factor keys, graph nodes/edges) is mirrored by hardcoded constants in `frontend/index.html` (`FACTOR_ORDER`, `FACTOR_LABELS`, `userWeights`) — change both together. Every graph node must be a real model quantity; decorative/fake nodes were deliberately removed.
+
+`app/services/simulation_service.py` (powers `POST /betting/simulate`) prices every leg with the same engine, shifts each by an LLM read of recent news (pgvector search → mean multiplier, applied in logit space so a neutral read is a no-op), then simulates the slip through a **Gaussian copula**: leg *i* hits when its correlated standard-normal draw clears `Φ⁻¹(1 − p_i)`. That preserves each leg's calibrated marginal exactly while letting same-game (0.10) and same-player (0.35) legs move together. It returns real convergence checkpoints and a legs-hit histogram — the frontend animation replays actual MC data, not a fake progress bar. Keep it that way.
 
 ### Data layer
 

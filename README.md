@@ -6,6 +6,8 @@ An AI-powered NBA assistant that answers stats questions via text-to-SQL, retrie
 
 - **Stats Q&A** — Ask natural language questions about NBA statistics. The system generates SQL, executes it, and returns a formatted answer.
 - **News RAG** — Ingests NBA news from RSS feeds, chunks and embeds articles with pgvector, and retrieves relevant context to answer news questions.
+- **One-screen workspace** — the betting board and the assistant sit side by side: picks and factor analysis on the left, chat docked on the right.
+- **Slip simulation** — add picks to the slip and run a 50,000-trial Monte Carlo that prices the parlay with correlation between legs, adjusts for recent news, and reports the break-even odds you need to be profitable.
 - **Betting Analysis** — A calibrated probabilistic prediction engine prices player props: recency-weighted mean projection, variance modeling, opponent/venue/rest adjustments, shrinkage, and Platt calibration. Validated with a walk-forward backtest over 880k+ historical predictions (Brier 0.153 on held-out seasons; see `docs/BACKTEST.md`).
 - **Backtesting** — `python backtest.py --seasons 2023-24,2024-25` replays history with zero lookahead leakage and reports Brier score, log loss, calibration tables, and simulated ROI.
 - **Game Previews** — Click a live-score chip or ask for a matchup to get an AI-generated preview with key stats and storylines.
@@ -87,6 +89,8 @@ Then open [http://localhost:8000](http://localhost:8000) to use the chat UI.
 | `/scores` | GET | Live / today's NBA scores |
 | `/headlines` | GET | Top 5 news headlines |
 | `/game-preview` | POST | AI game preview for a matchup |
+| `/betting/picks` | GET | Today's calibrated picks with factor attribution |
+| `/betting/simulate` | POST | Monte Carlo simulation of a bet slip |
 
 ### Example
 
