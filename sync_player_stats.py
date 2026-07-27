@@ -1,12 +1,18 @@
 """
 Bulk-load player box scores into player_game_stats using PlayerGameLogs endpoint.
 One API call per season (instead of per-player), covering Regular Season and Playoffs.
-Run: python sync_player_stats.py
+
+Run: python sync_player_stats.py                  # every season up to the current one
+     python sync_player_stats.py --seasons 2025-26  # just the seasons you name
+     python sync_player_stats.py --from 2024-25     # that season onward
+
 Requires: DATABASE_URL in environment or .env
 """
 
+import argparse
 import os
 import time
+from datetime import datetime
 
 import pandas as pd
 import psycopg2
@@ -16,13 +22,27 @@ from nba_api.stats.endpoints import playergamelogs
 load_dotenv()
 
 FIRST_SEASON = "1946-47"
-CURRENT_SEASON = "2024-25"
 REQUEST_DELAY_SEC = 0.6
 
 
-def get_season_list() -> list[str]:
-    start_year = int(FIRST_SEASON.split("-")[0])
-    end_year = int(CURRENT_SEASON.split("-")[0])
+def current_season() -> str:
+    """The most recent season that has started.
+
+    NBA seasons roll over in the autumn, so before August we are still in the
+    season that began the previous calendar year. This used to be a hardcoded
+    constant, which silently capped ingestion a season behind for months.
+    """
+    override = os.getenv("NBA_CURRENT_SEASON")
+    if override:
+        return override
+    now = datetime.now()
+    start = now.year if now.month >= 8 else now.year - 1
+    return f"{start}-{str(start + 1)[2:]}"
+
+
+def get_season_list(first: str = FIRST_SEASON, last: str | None = None) -> list[str]:
+    start_year = int(first.split("-")[0])
+    end_year = int((last or current_season()).split("-")[0])
     return [f"{y}-{str(y + 1)[-2:]}" for y in range(start_year, end_year + 1)]
 
 
@@ -160,10 +180,21 @@ def main() -> None:
             "You can put it in a .env file."
         )
 
+    parser = argparse.ArgumentParser(description="Sync player box scores.")
+    parser.add_argument("--seasons", help="comma-separated seasons, e.g. 2024-25,2025-26")
+    parser.add_argument("--from", dest="from_season", help="sync this season onward")
+    args = parser.parse_args()
+
     conn = psycopg2.connect(database_url)
     ensure_schema(conn)
 
-    seasons = get_season_list()
+    if args.seasons:
+        seasons = [x.strip() for x in args.seasons.split(",") if x.strip()]
+    elif args.from_season:
+        seasons = get_season_list(first=args.from_season)
+    else:
+        seasons = get_season_list()
+    print(f"Current season resolves to {current_season()}; syncing {len(seasons)} season(s).")
     total = 0
 
     for i, season in enumerate(seasons):
