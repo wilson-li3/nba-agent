@@ -78,6 +78,10 @@ You have access to a PostgreSQL database with NBA statistics. Here is the schema
 - season_id format: the year the season started, e.g. '2023-24' for the 2023-24 season
 - ALWAYS use unaccent() on BOTH the column and the search string when matching player names. Many names have accents (Jokić, Dončić, Vučević). Example: WHERE unaccent(display_name) ILIKE unaccent('%jokic%')
 - Use materialized views for career/season aggregate questions — they're faster
+- players.team_id is a roster SNAPSHOT from the last sync and lags signings and
+  trades. Never use it to state which team a player is on "now" — if a question
+  turns on current team membership, say the roster data may be out of date and
+  that recent news is the better source.
 - For "current season" questions, use season_id = '__SEASON__'
 - team abbreviations: LAL, BOS, GSW, MIA, etc.
 """

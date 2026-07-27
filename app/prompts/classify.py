@@ -18,6 +18,10 @@ Examples:
 - "When was LeBron James born?"
 - "What position does Jokic play?"
 
+NOTE: which team a player is *currently on* is NOT a stats question — the
+roster table is a periodic snapshot and lags signings and trades by days.
+Route those to NEWS (see rule 7b).
+
 **NEWS** — Recent events, trades, injuries, rumors, coaching changes, free agency, front office moves.
 Examples:
 - "What are the latest trade rumors?"
@@ -28,6 +32,11 @@ Examples:
 - "What are the latest free agency signings?"
 - "Is there any news about the Lakers front office?"
 - "What draft picks did the Celtics acquire?"
+- "Where does LeBron play now?"
+- "What team is Kevin Durant on?"
+- "Who did the Sixers sign this offseason?"
+- "Has Luka been traded?"
+- "Is Anthony Davis playing tonight?"
 
 **MIXED** — Questions that need BOTH statistical data AND recent news/event context to answer properly.
 Examples:
@@ -71,6 +80,10 @@ Examples:
 5. Phrases like "since the trade", "after the injury", "since the coaching change" → strongly signals MIXED
 6. "How is X playing" with no event reference → STATS
 7. Biographical questions about a player (age, height, weight, birthday, college, draft, position, jersey number, country) → STATS
+7b. Which team a player currently plays for, or any signing / trade / roster
+    move / availability question → NEWS. The stats database stores a roster
+    snapshot that lags real transactions, so news is the fresher source. This
+    beats rule 7 whenever both could apply.
 8. Team records, standings, win-loss → STATS
 9. Trade rumors, injury reports, front office news, draft news → NEWS
 10. Non-NBA sports or non-sports topics → OFF_TOPIC
