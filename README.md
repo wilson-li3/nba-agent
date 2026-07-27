@@ -91,6 +91,23 @@ Then open [http://localhost:8000](http://localhost:8000) to use the chat UI.
 | `/game-preview` | POST | AI game preview for a matchup |
 | `/betting/picks` | GET | Today's calibrated picks with factor attribution |
 | `/betting/simulate` | POST | Monte Carlo simulation of a bet slip |
+| `/usage` | GET | Today's model spend, token counts, and throttle state |
+
+### Cost controls
+
+The app is unauthenticated, so before exposing it publicly note the two guards
+that cap OpenAI spend:
+
+- **Weighted rate limiting** per client IP — routes cost credits proportional to
+  how many model calls they trigger (`/betting/simulate` 10, `/ask` 5, `/scores`
+  free), enforced over a rolling minute and a day.
+- **A daily budget kill switch** — every call's tokens are metered; once
+  `DAILY_LLM_CALL_BUDGET` or `DAILY_LLM_TOKEN_BUDGET` is reached the app stops
+  calling OpenAI and explains itself instead of failing.
+
+Tune with env vars (`RATE_LIMIT_CREDITS`, `RATE_LIMIT_WINDOW_SECONDS`,
+`RATE_LIMIT_DAILY_CREDITS`, `DAILY_LLM_CALL_BUDGET`, `DAILY_LLM_TOKEN_BUDGET`)
+and monitor `GET /usage`.
 
 ### Example
 

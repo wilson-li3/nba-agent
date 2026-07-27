@@ -4,6 +4,7 @@ from fastapi import APIRouter
 from pydantic import BaseModel, Field
 
 from app.services.betting_picks_service import get_structured_picks
+from app.services.llm import LLMBudgetExceeded
 from app.services.simulation_service import simulate_slip
 
 logger = logging.getLogger(__name__)
@@ -38,6 +39,9 @@ async def picks():
 async def simulate(req: SimulateRequest):
     try:
         return await simulate_slip([leg.model_dump() for leg in req.legs], use_news=req.use_news)
+    except LLMBudgetExceeded:
+        logger.warning("Daily LLM budget reached; refusing simulation")
+        return {"error": "This demo has reached its daily model budget, so live answers are paused until it resets at midnight UTC."}
     except Exception:
         logger.error("Simulation failed", exc_info=True)
         return {"error": "Simulation failed. Check the server logs."}

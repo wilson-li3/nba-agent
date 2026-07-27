@@ -26,6 +26,27 @@ python sync_games.py && python sync_players.py && python sync_player_stats.py &&
 - Everything lives on one screen at `/` (`frontend/index.html`): picks list, tabbed Analysis/Slip workspace, and the assistant docked right at ~38%. `frontend/betting.html` is now just a redirect to `/`.
 - APIs: `GET /betting/picks`, `POST /betting/simulate {legs:[...]}`, `POST /ask {"question": ...}`.
 
+## Spend protection (read before deploying)
+
+The app has no auth — anything reachable is public, and `/ask` fans out to 5-7
+OpenAI calls while `/betting/simulate` can reach ~17. Two independent guards:
+
+- **`app/rate_limit.py`** — per-client, weighted by route cost in *credits*, not
+  requests (`/betting/simulate` = 10, `/ask` = 5, `/scores` = free). Per-minute
+  and per-day windows, in-memory. Tunable via `RATE_LIMIT_*` env vars. It's
+  per-process: behind multiple workers, move the buckets to Redis.
+- **`app/services/llm.py`** — meters every call's token usage and raises
+  `LLMBudgetExceeded` once `DAILY_LLM_CALL_BUDGET` or `DAILY_LLM_TOKEN_BUDGET`
+  is hit. Routers catch it and return a friendly message rather than 500ing.
+
+`GET /usage` reports today's calls, tokens, per-model breakdown and throttle
+state — watch it after deploying. Note the scheduler embeds new articles every
+15 minutes, so there is a small baseline cost with zero traffic.
+
+When adding an endpoint that calls the LLM, give it a cost in `ROUTE_COST` and
+let `LLMBudgetExceeded` propagate to the router (don't swallow it in a broad
+`except Exception`, or the user gets a generic error instead of the real one).
+
 ## Git conventions (user requirement)
 
 Commit messages: brief, all lowercase. Never add Claude as a contributor (no `Co-Authored-By` trailer). Commit incrementally — each working change — and push to `origin main`.

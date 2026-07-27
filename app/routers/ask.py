@@ -3,6 +3,7 @@ import logging
 from fastapi import APIRouter
 from pydantic import BaseModel
 
+from app.services.llm import LLMBudgetExceeded
 from app.services.router_service import route_question
 
 logger = logging.getLogger(__name__)
@@ -27,6 +28,13 @@ class AskResponse(BaseModel):
 async def ask(req: AskRequest):
     try:
         result = await route_question(req.question, message_history=req.message_history)
+    except LLMBudgetExceeded:
+        logger.warning("Daily LLM budget reached; refusing question")
+        return AskResponse(
+            question=req.question,
+            category="error",
+            answer="This demo has reached its daily model budget, so live answers are paused until it resets at midnight UTC.",
+        )
     except Exception:
         logger.error("Unhandled error for question: %s", req.question, exc_info=True)
         return AskResponse(

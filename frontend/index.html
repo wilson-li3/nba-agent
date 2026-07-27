@@ -2126,9 +2126,13 @@ async function runSimulation() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ legs: slipLegsPayload(), use_news: true }),
     });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
+    const data = await res.json().catch(() => null);
     stopSimAnim();
+    if (res.status === 429 && data) {
+      host.innerHTML = `<div class="sim-note">${escapeHtml(data.answer || data.error)}</div>`;
+      return;
+    }
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     if (data.error) {
       host.innerHTML = `<div class="sim-note">${escapeHtml(data.error)}</div>`;
       return;
@@ -2459,9 +2463,13 @@ chatForm.addEventListener('submit', async (e) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ question, message_history: historySnapshot }),
     });
-    if (!res.ok) throw new Error(`Server error: ${res.status}`);
-    const data = await res.json();
+    const data = await res.json().catch(() => null);
     loader.remove();
+    if (res.status === 429 && data) {
+      addAssistantMessage({ answer: data.answer || data.error, category: 'error' });
+      return;
+    }
+    if (!res.ok) throw new Error(`Server error: ${res.status}`);
     addAssistantMessage(data);
     conversationHistory.push({ role: 'assistant', content: data.answer || '' });
   } catch (err) {

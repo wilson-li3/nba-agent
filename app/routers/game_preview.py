@@ -4,6 +4,7 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 
 from app.services.game_preview_service import generate_game_preview
+from app.services.llm import LLMBudgetExceeded
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +33,9 @@ async def game_preview(req: GamePreviewRequest):
             home_team_id=req.home_team_id,
             away_team_id=req.away_team_id,
         )
+    except LLMBudgetExceeded:
+        logger.warning("Daily LLM budget reached; refusing preview")
+        return {"answer": "This demo has reached its daily model budget, so live answers are paused until it resets at midnight UTC.", "category": "error"}
     except Exception:
         logger.error(
             "Game preview failed: %s @ %s",
