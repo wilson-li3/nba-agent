@@ -105,9 +105,14 @@ that cap OpenAI spend:
   `DAILY_LLM_CALL_BUDGET` or `DAILY_LLM_TOKEN_BUDGET` is reached the app stops
   calling OpenAI and explains itself instead of failing.
 
+- **A cap on background ingestion** — `sync_news.py` runs on a schedule and
+  embeds new articles, which is spend that happens with zero users. It is a
+  separate process from the API, so it carries its own daily limit
+  (`NEWS_MAX_ARTICLES_PER_DAY`, default 250).
+
 Tune with env vars (`RATE_LIMIT_CREDITS`, `RATE_LIMIT_WINDOW_SECONDS`,
-`RATE_LIMIT_DAILY_CREDITS`, `DAILY_LLM_CALL_BUDGET`, `DAILY_LLM_TOKEN_BUDGET`)
-and monitor `GET /usage`.
+`RATE_LIMIT_DAILY_CREDITS`, `DAILY_LLM_CALL_BUDGET`, `DAILY_LLM_TOKEN_BUDGET`,
+`NEWS_MAX_ARTICLES_PER_DAY`) and monitor `GET /usage`.
 
 ### Example
 

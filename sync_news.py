@@ -103,6 +103,24 @@ def main() -> None:
     conn = psycopg2.connect(database_url)
     ensure_schema(conn)
 
+    # This script runs as a scheduled subprocess, so it does NOT share the
+    # server's in-memory LLM budget (app/services/llm.py). Without its own cap
+    # the every-15-minutes schedule is an uncapped embedding bill. Bound it on
+    # what has already been ingested today, which is shared state both
+    # processes can see.
+    daily_cap = int(os.getenv("NEWS_MAX_ARTICLES_PER_DAY", "250"))
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT COUNT(*) FROM news_articles WHERE ingested_at::date = CURRENT_DATE"
+        )
+        ingested_today = cur.fetchone()[0]
+    remaining = daily_cap - ingested_today
+    if remaining <= 0:
+        print(f"Daily ingest cap reached ({ingested_today}/{daily_cap}); nothing to do.")
+        conn.close()
+        return
+    print(f"Budget: {remaining} more articles today (cap {daily_cap}).")
+
     client = OpenAI(api_key=openai_key)
     enc = tiktoken.encoding_for_model("gpt-4o")
 
@@ -110,6 +128,8 @@ def main() -> None:
     total_chunks = 0
 
     for source_name, feed_url in RSS_FEEDS:
+        if total_articles >= remaining:
+            break
         print(f"Fetching {source_name} ...", flush=True)
         try:
             feed = feedparser.parse(feed_url)
@@ -118,6 +138,9 @@ def main() -> None:
             continue
 
         for entry in feed.entries:
+            if total_articles >= remaining:
+                print(f"  Reached daily ingest cap ({daily_cap}); stopping.")
+                break
             url = getattr(entry, "link", None)
             title = getattr(entry, "title", "Untitled")
             if not url:

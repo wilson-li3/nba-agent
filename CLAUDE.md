@@ -40,8 +40,15 @@ OpenAI calls while `/betting/simulate` can reach ~17. Two independent guards:
   is hit. Routers catch it and return a friendly message rather than 500ing.
 
 `GET /usage` reports today's calls, tokens, per-model breakdown and throttle
-state — watch it after deploying. Note the scheduler embeds new articles every
-15 minutes, so there is a small baseline cost with zero traffic.
+state — watch it after deploying.
+
+**`sync_news.py` is a scheduled subprocess and does NOT share the server's
+in-memory budget** — it builds its own OpenAI client, so its embedding spend is
+invisible to `/usage` and uncapped by `DAILY_LLM_*`. It has a separate guard
+(`NEWS_MAX_ARTICLES_PER_DAY`, default 250) enforced by counting rows already
+ingested today. If you add another background script that calls OpenAI, it
+needs its own cap for the same reason — or move the counters into Postgres so
+every process shares one budget.
 
 When adding an endpoint that calls the LLM, give it a cost in `ROUTE_COST` and
 let `LLMBudgetExceeded` propagate to the router (don't swallow it in a broad
