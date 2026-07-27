@@ -71,6 +71,16 @@ python sync_news.py
 
 Each script is idempotent (safe to re-run). The news sync also runs automatically every 15 minutes when the API server is running.
 
+## Run with Docker
+
+```bash
+cp .env.example .env      # set OPENAI_API_KEY
+docker compose up --build # API on http://localhost:8099
+```
+
+Brings up the API and a pgvector Postgres together. See `DEPLOY.md` for
+deploying to a host and for seeding the database.
+
 ## Run the API
 
 ```bash

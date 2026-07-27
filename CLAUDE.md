@@ -26,6 +26,20 @@ python sync_games.py && python sync_players.py && python sync_player_stats.py &&
 - Everything lives on one screen at `/` (`frontend/index.html`): picks list, tabbed Analysis/Slip workspace, and the assistant docked right at ~38%. `frontend/betting.html` is now just a redirect to `/`.
 - APIs: `GET /betting/picks`, `POST /betting/simulate {legs:[...]}`, `POST /ask {"question": ...}`.
 
+## Deployment
+
+Dockerised: `docker compose up --build` runs API + pgvector Postgres locally
+(API on **8099**, Postgres on **5433** — offset so they never collide with a
+local `uvicorn --port 8000` or system Postgres). The DB needs **both** the
+`vector` and `unaccent` extensions; `unaccent` is easy to miss and fails at
+query time, not startup, because every fuzzy player lookup uses it.
+Full guide in `DEPLOY.md`. CI (`.github/workflows/ci.yml`) runs the engine
+tests, an import check, the frontend JS syntax check, and a Docker build.
+
+Tests live in `tests/` and cover `prediction_engine` and the copula in
+`simulation_service` — both are pure computation, so they run with no database
+and no API keys. Keep them that way; it's why CI needs no secrets.
+
 ## Spend protection (read before deploying)
 
 The app has no auth — anything reachable is public, and `/ask` fans out to 5-7

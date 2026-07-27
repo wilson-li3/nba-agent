@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    name: Tests and checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pytest
+
+      # The prediction engine and the copula simulation are pure computation,
+      # so they run here with no database and no API keys.
+      - name: Unit tests
+        run: pytest tests/ -q
+
+      - name: Import check (catches syntax and circular imports)
+        run: python -c "import app.main, backtest, sync_news, sync_player_stats, refresh_aggregates"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      # The frontend is one big HTML file with inline JS — a typo there is
+      # invisible to Python tooling and ships a blank page.
+      - name: Frontend JS syntax
+        run: python scripts/check_frontend_js.py
+
+  image:
+    name: Docker image builds
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          tags: nba-agent:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

@@ -1,0 +1,33 @@
+# Full local stack: API + Postgres with pgvector, in one command.
+#   docker compose up --build
+services:
+  db:
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_USER: nba
+      POSTGRES_PASSWORD: nba
+      POSTGRES_DB: nba
+    ports: ["5433:5432"]
+    volumes:
+      - nba-pgdata:/var/lib/postgresql/data
+      - ./docker/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nba -d nba"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://nba:nba@db:5432/nba
+      OPENAI_API_KEY: ${OPENAI_API_KEY:?set OPENAI_API_KEY in your .env}
+      PORT: 8000
+    # 8080 on the host so it never collides with a local `uvicorn ... --port 8000`
+    ports: ["8099:8000"]
+
+volumes:
+  nba-pgdata:
