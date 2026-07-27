@@ -45,7 +45,7 @@ iconify-icon{display:inline-block;vertical-align:-0.125em;}
   border-bottom:1px solid var(--border);
   background:var(--surface);
 }
-.header-left{display:flex;align-items:baseline;gap:10px;}
+.header-left{display:flex;align-items:center;gap:10px;min-width:0;}
 .brand{
   display:flex;align-items:center;gap:8px;
   font-weight:650;font-size:0.95rem;letter-spacing:-0.01em;
@@ -495,6 +495,8 @@ iconify-icon{display:inline-block;vertical-align:-0.125em;}
 }
 .scores-bar::-webkit-scrollbar{display:none;}
 .scores-label{font-weight:600;color:var(--ink-2);white-space:nowrap;flex-shrink:0;}
+#scoresContent{display:flex;align-items:center;gap:8px;flex-wrap:nowrap;}
+.scores-bar .game-chip{flex-shrink:0;}
 .game-chip{
   display:inline-flex;align-items:center;gap:5px;
   padding:3px 9px;border:1px solid var(--border);border-radius:8px;
@@ -935,6 +937,21 @@ body{display:flex;flex-direction:column;}
   .chat-panel{height:80vh;}
 }
 
+/* ═══ OFFSEASON NOTICE ════════════════════════════════════════════════════
+   Driven by /scores context, so it disappears on its own once a real slate
+   exists rather than needing to be remembered and removed. */
+.notice-banner{
+  flex-shrink:0;
+  display:flex;align-items:center;gap:8px;
+  padding:7px 24px;
+  background:var(--warn-bg);
+  color:var(--warn-ink);
+  font-size:0.76rem;line-height:1.4;
+  border-bottom:1px solid var(--border);
+}
+.notice-banner iconify-icon{font-size:0.95rem;flex-shrink:0;}
+.notice-banner b{font-weight:650;}
+
 /* ═══ SLIP DISCOVERABILITY ════════════════════════════════════════════════
    Adding a pick used to only bump a small badge on a tab most people never
    looked at. The picks column now carries a persistent bar that says where
@@ -1008,6 +1025,12 @@ body{display:flex;flex-direction:column;}
 </style>
 </head>
 <body>
+
+<!-- Offseason notice -->
+<div class="notice-banner" id="noticeBanner" hidden>
+  <iconify-icon icon="tabler:info-circle"></iconify-icon>
+  <span id="noticeText"></span>
+</div>
 
 <!-- Header -->
 <header class="header">
@@ -2469,10 +2492,30 @@ function teamLogoById(teamId) {
   return `<img src="https://cdn.nba.com/logos/nba/${teamId}/primary/L/logo.svg" class="team-logo" alt="" loading="lazy">`;
 }
 
+function renderNotice(data) {
+  const banner = document.getElementById('noticeBanner');
+  const text = document.getElementById('noticeText');
+  if (!banner || !text) return;
+  const ctx = data.context;
+  if (ctx === 'preseason') {
+    const when = (data.label || '').replace(/^Preseason\s*·\s*/, '');
+    text.innerHTML = `<b>Offseason.</b> No live slate — matchups below are the most recent preseason games`
+      + `${when ? ` (${escapeHtml(when)})` : ''}, and pick probabilities are priced on the last completed regular season.`;
+    banner.hidden = false;
+  } else if (ctx === 'none') {
+    text.innerHTML = `<b>No games scheduled.</b> Picks are modelled on the last completed season, `
+      + `without opponent or venue context.`;
+    banner.hidden = false;
+  } else {
+    banner.hidden = true;
+  }
+}
+
 async function fetchScores() {
   try {
     const res = await fetch('/scores');
     const data = await res.json();
+    renderNotice(data);
     if (data.games && data.games.length) {
       const label = data.label ? `<span class="scores-label">${escapeHtml(data.label)}</span>` : '';
       const chips = data.games.map(g => {
