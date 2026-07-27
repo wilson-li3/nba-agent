@@ -12,6 +12,7 @@ from collections import defaultdict
 from datetime import date, datetime, timezone
 
 from app.db import get_pool
+from app.services.availability_service import check_availability
 from app.services.betting_service import _execute_query, _get_todays_schedule
 from app.services.prediction_engine import ENGINE_PARAMS, Prediction, predict
 
@@ -52,6 +53,9 @@ STAT_LABELS = {"pts": "PTS", "reb": "REB", "ast": "AST", "fg3m": "3PM", "pra": "
 
 MIN_PICK_PROB = 0.70   # a prop must clear this to make the board
 MAX_PICKS = 12
+# Price more candidates than we show, so dropping unavailable players still
+# leaves a full board rather than a short one.
+CANDIDATE_POOL = 20
 
 # In-memory response cache — the underlying data only changes when new box
 # scores land, so recomputing picks on every page load is wasted work.
@@ -321,7 +325,28 @@ async def get_structured_picks() -> dict:
         })
 
     picks.sort(key=lambda x: x["confidence"], reverse=True)
-    picks = picks[:MAX_PICKS]
+    picks = picks[:CANDIDATE_POOL]
+
+    # The engine prices from box scores, which look the same whether or not a
+    # player is actually going to suit up. Gate the board on recent news.
+    dropped = []
+    try:
+        availability = await check_availability(pool, [p["player_name"] for p in picks])
+    except Exception:
+        logger.warning("Availability check failed; showing unfiltered board", exc_info=True)
+        availability = {}
+    kept = []
+    for pick in picks:
+        info = availability.get(pick["player_name"], {})
+        status = info.get("status", "available")
+        pick["availability"] = info or {"status": "available", "note": "", "sources": []}
+        if status == "out":
+            dropped.append({"player_name": pick["player_name"],
+                            "note": info.get("note", ""),
+                            "sources": info.get("sources", [])})
+            continue
+        kept.append(pick)
+    picks = kept[:MAX_PICKS]
 
     payload = {
         "picks": picks,
@@ -330,6 +355,7 @@ async def get_structured_picks() -> dict:
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "games_today": games_today,
             "model": "probabilistic-v2",
+            "excluded_unavailable": dropped,
             "engine": {
                 "min_games": ENGINE_PARAMS["min_games"],
                 "calibration": [ENGINE_PARAMS["cal_a"], ENGINE_PARAMS["cal_b"]],
