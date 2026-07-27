@@ -1,3 +1,15 @@
+from datetime import datetime
+
+
+def _current_season() -> str:
+    """Season that has most recently started — NBA seasons roll over in autumn."""
+    now = datetime.now()
+    start = now.year if now.month >= 8 else now.year - 1
+    return f"{start}-{str(start + 1)[2:]}"
+
+
+CURRENT_SEASON = _current_season()
+
 SCHEMA_DESCRIPTION = """
 You have access to a PostgreSQL database with NBA statistics. Here is the schema:
 
@@ -66,7 +78,7 @@ You have access to a PostgreSQL database with NBA statistics. Here is the schema
 - season_id format: the year the season started, e.g. '2023-24' for the 2023-24 season
 - ALWAYS use unaccent() on BOTH the column and the search string when matching player names. Many names have accents (Jokić, Dončić, Vučević). Example: WHERE unaccent(display_name) ILIKE unaccent('%jokic%')
 - Use materialized views for career/season aggregate questions — they're faster
-- For "current season" questions, use season_id = '2024-25'
+- For "current season" questions, use season_id = '__SEASON__'
 - team abbreviations: LAL, BOS, GSW, MIA, etc.
 """
 
@@ -84,7 +96,7 @@ Rules:
 5. Use ILIKE for fuzzy name matching. Always wrap player name columns AND the search string in unaccent() to handle accented characters (Jokić, Dončić, Vučević, etc.). Example: WHERE unaccent(display_name) ILIKE unaccent('%jokic%')
 6. Round decimal results to 1-2 decimal places for readability.
 7. When the question is ambiguous, apply these defaults:
-   - No season specified → use season_id = '2024-25'
+   - No season specified → use season_id = '__SEASON__'
    - No specific stat mentioned → include pts, reb, ast at minimum
    - "Recently" / "lately" → last 10 games
    - "This month" → game_date >= date_trunc('month', CURRENT_DATE)
@@ -103,7 +115,7 @@ FROM (
         SELECT player_id, pts,
                ROW_NUMBER() OVER (PARTITION BY player_id ORDER BY game_date DESC) as rn
         FROM player_game_stats
-        WHERE season_id = '2024-25'
+        WHERE season_id = '__SEASON__'
     ) recent
     WHERE rn <= 8 AND pts >= 20
     GROUP BY player_id
@@ -124,7 +136,7 @@ FROM (
            ROW_NUMBER() OVER (ORDER BY game_date DESC) AS rn
     FROM player_game_stats
     WHERE player_id = (SELECT player_id FROM players WHERE unaccent(display_name) ILIKE unaccent('%tatum%'))
-      AND season_id = '2024-25'
+      AND season_id = '__SEASON__'
 ) recent
 JOIN players p ON p.player_id = recent.player_id
 WHERE rn <= 10
@@ -149,7 +161,7 @@ SELECT
     ROUND(AVG(s.ast)::numeric,1) AS apg, ROUND(AVG(s.fg_pct)::numeric,3) AS fg_pct
 FROM player_game_stats s
 WHERE s.player_id = (SELECT player_id FROM players WHERE unaccent(display_name) ILIKE unaccent('%curry%'))
-  AND s.season_id = '2024-25'
+  AND s.season_id = '__SEASON__'
 GROUP BY CASE WHEN s.matchup LIKE '%vs.%' THEN 'Home' ELSE 'Away' END;
 
 13. For matchup / opponent-specific stats: use WHERE matchup LIKE '%OPP%' (e.g., '%BOS%').
@@ -171,7 +183,7 @@ WITH recent AS (
            ROW_NUMBER() OVER (ORDER BY game_date DESC) AS rn
     FROM player_game_stats
     WHERE player_id = (SELECT player_id FROM players WHERE unaccent(display_name) ILIKE unaccent('%tatum%'))
-      AND season_id = '2024-25'
+      AND season_id = '__SEASON__'
 )
 SELECT
     ROUND(AVG(pts) FILTER (WHERE rn <= 5)::numeric, 1)  AS last_5_ppg,
@@ -195,7 +207,7 @@ SELECT
 FROM player_game_stats s
 JOIN mv_team_back_to_backs b ON b.team_id = s.team_id AND b.game_id = s.game_id
 WHERE s.player_id = (SELECT player_id FROM players WHERE unaccent(display_name) ILIKE unaccent('%giannis%'))
-  AND s.season_id = '2024-25'
+  AND s.season_id = '__SEASON__'
 GROUP BY CASE WHEN b.is_b2b THEN 'Back-to-Back' ELSE 'Rest' END;
 
 16. For injury-impact questions, news context will be appended below. Use it to identify which player is injured.
@@ -211,7 +223,7 @@ LEFT JOIN player_game_stats pgs2
     ON pgs2.game_id = s.game_id AND pgs2.player_id = (SELECT player_id FROM players WHERE ...)
 WHERE s.team_id = (SELECT team_id FROM players WHERE ...)
   AND s.player_id != (SELECT player_id FROM players WHERE ...)
-  AND s.season_id = '2024-25'
+  AND s.season_id = '__SEASON__'
 GROUP BY p.display_name
 HAVING COUNT(*) FILTER (WHERE pgs2.player_id IS NULL) >= 3
 ORDER BY (AVG(s.pts) FILTER (WHERE pgs2.player_id IS NULL) - AVG(s.pts) FILTER (WHERE pgs2.player_id IS NOT NULL)) DESC
@@ -221,12 +233,12 @@ LIMIT 10;
 SELECT display_name, ppg, rpg, apg, spg, bpg, fg_pct, fg3_pct, ft_pct, games_played
 FROM mv_player_season_averages
 WHERE player_id = (SELECT player_id FROM players WHERE unaccent(display_name) ILIKE unaccent('%name%'))
-  AND season_id = '2024-25';
+  AND season_id = '__SEASON__';
 
 18. For "best" / "top" questions without a specific stat, rank by PPG and include RPG/APG:
 SELECT display_name, ppg, rpg, apg, games_played
 FROM mv_player_season_averages
-WHERE season_id = '2024-25'
+WHERE season_id = '__SEASON__'
 ORDER BY ppg DESC
 LIMIT 10;
 
@@ -236,7 +248,7 @@ SELECT
     COUNT(*) FILTER (WHERE (home_team_abbr = 'TEAM' AND home_wl = 'L') OR (away_team_abbr = 'TEAM' AND away_wl = 'L')) AS losses
 FROM games
 WHERE (home_team_abbr = 'TEAM' OR away_team_abbr = 'TEAM')
-  AND season_id = '2024-25' AND season_type = 'Regular Season';
+  AND season_id = '__SEASON__' AND season_type = 'Regular Season';
 
 20. For "all-time" / "greatest" / "career leader" questions, use mv_player_career_totals:
 SELECT display_name, total_pts, ppg, rpg, apg, games_played
@@ -254,7 +266,7 @@ SELECT p.display_name,
 FROM player_game_stats s
 JOIN players p USING (player_id)
 WHERE unaccent(p.display_name) ILIKE unaccent('%name%')
-  AND s.season_id = '2024-25'
+  AND s.season_id = '__SEASON__'
 GROUP BY p.display_name;
 
 22. For multi-season comparison questions, pull multiple seasons from mv_player_season_averages:
@@ -272,3 +284,7 @@ ORDER BY season_id DESC;
 
 User question: {question}
 """
+
+# Resolve the season placeholder once, at import.
+SCHEMA_DESCRIPTION = SCHEMA_DESCRIPTION.replace("__SEASON__", CURRENT_SEASON)
+TEXT_TO_SQL_PROMPT = TEXT_TO_SQL_PROMPT.replace("__SEASON__", CURRENT_SEASON)
