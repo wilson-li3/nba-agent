@@ -9,7 +9,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/static/theme.css">
-<script>document.documentElement.dataset.theme = localStorage.getItem('bdl_theme') || '';</script>
+<script>
+document.documentElement.dataset.theme = localStorage.getItem('bdl_theme') || '';
+document.documentElement.dataset.accent = localStorage.getItem('bdl_accent') || '';
+</script>
 <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/iconify-icon@2/dist/iconify-icon.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/marked@11/marked.min.js"></script>

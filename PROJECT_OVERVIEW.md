@@ -65,7 +65,7 @@ User Question
 | File | What It Does |
 |------|-------------|
 | `frontend/index.html` | **The whole app on one screen** — picks list, tabbed Analysis (D3 force graph + weight sliders) / Slip (bet slip, Monte Carlo simulation, bankroll calculator), and the assistant docked on the right at ~38%. |
-| `frontend/theme.css` / `theme.js` | Theme tokens built on the Blue Nova palette (periwinkle, sand, terracotta, slate) in four variants — Blue Nova, Sand, Mist, Dusk — plus the court backdrop. Every text pair is WCAG AA verified; `--fx-glow` damps the graph/simulation glows on light surfaces. |
+| `frontend/theme.css` / `theme.js` | Theme tokens on the Blue Nova palette. Two independent axes: **base** (Blue Nova, Sand, Mist, Dusk) and **accent** (Periwinkle, Indigo, Teal, Plum, Sage, Terracotta), so any accent works on any base. Every text pair is WCAG AA verified — accent tints are computed blends, not hand-picked. `--fx-glow` damps the graph/simulation glows on light surfaces. |
 
 ---
 

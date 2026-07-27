@@ -23,14 +23,8 @@
   --ink-3:#626B6D;
   --border:#DEDCD0;
   --border-strong:#C9C8BA;
-  --accent:#D18266;
-  --accent-ink:#9E5238;
-  --accent-soft:#F7E9E2;
-  --accent-contrast:#3A241C;
-  --accent-edge:#E2B5A3;
   --primary:#5B6D92;
   --primary-ink:#4C5C7C;
-  --focus-ring:rgb(209 130 102 / 0.30);
   --green:#4F7A5C;
   --live-edge:#A9C4B1;
   --warn-bg:#F5EBD8;
@@ -45,7 +39,6 @@
   --graph-label:#364042;
   --graph-value:#576063;
   --graph-edge:#8A918D;
-  --graph-glow:rgb(209 130 102 / 0.16);
   --cat-historical:#5B6D92;
   --cat-trend:#C0714E;
   --cat-matchup:#5C8468;
@@ -55,7 +48,6 @@
   --cat-meta:#8B7391;
   --court-line:rgb(91 109 146 / 0.30);
   --court-glow:transparent;
-  --landing-glow:rgb(209 130 102 / 0.07);
 }
 
 /* Sand — the warm neutral carries the canvas */
@@ -69,14 +61,8 @@
   --ink-3:#5C625F;
   --border:#E0CFBC;
   --border-strong:#CBB69F;
-  --accent:#D18266;
-  --accent-ink:#94492F;
-  --accent-soft:#F8E7DC;
-  --accent-contrast:#3A241C;
-  --accent-edge:#DFAF97;
   --primary:#5B6D92;
   --primary-ink:#48577A;
-  --focus-ring:rgb(209 130 102 / 0.30);
   --green:#4B7458;
   --live-edge:#B3C6B8;
   --warn-bg:#F3E5C9;
@@ -91,7 +77,6 @@
   --graph-label:#364042;
   --graph-value:#575E5B;
   --graph-edge:#8C8477;
-  --graph-glow:rgb(209 130 102 / 0.18);
   --cat-historical:#5B6D92;
   --cat-trend:#B96945;
   --cat-matchup:#557E61;
@@ -101,7 +86,6 @@
   --cat-meta:#856D8B;
   --court-line:rgb(91 109 146 / 0.28);
   --court-glow:transparent;
-  --landing-glow:rgb(209 130 102 / 0.08);
 }
 
 /* Mist — Blue Nova's pale blue as the canvas */
@@ -115,14 +99,8 @@
   --ink-3:#616B6E;
   --border:#CFDEE1;
   --border-strong:#B3C7CB;
-  --accent:#D18266;
-  --accent-ink:#9E5238;
-  --accent-soft:#F7E7E0;
-  --accent-contrast:#3A241C;
-  --accent-edge:#DFB09C;
   --primary:#5B6D92;
   --primary-ink:#4C5C7C;
-  --focus-ring:rgb(91 109 146 / 0.28);
   --green:#4F7A5C;
   --live-edge:#A2C0AC;
   --warn-bg:#F2E8D4;
@@ -137,7 +115,6 @@
   --graph-label:#364042;
   --graph-value:#566063;
   --graph-edge:#7E8C90;
-  --graph-glow:rgb(91 109 146 / 0.16);
   --cat-historical:#4F6389;
   --cat-trend:#BC6C49;
   --cat-matchup:#4F7F62;
@@ -147,7 +124,6 @@
   --cat-meta:#836D8A;
   --court-line:rgb(76 92 124 / 0.26);
   --court-glow:transparent;
-  --landing-glow:rgb(91 109 146 / 0.08);
 }
 
 /* Dusk — the palette's own slate, for night use. Muted, not neon. */
@@ -161,14 +137,8 @@
   --ink-3:#A6ADAC;
   --border:#475254;
   --border-strong:#5C6769;
-  --accent:#D18266;
-  --accent-ink:#E09A80;
-  --accent-soft:#4A3A34;
-  --accent-contrast:#2E1A13;
-  --accent-edge:#7A5344;
   --primary:#93A5CC;
   --primary-ink:#A8B7D6;
-  --focus-ring:rgb(209 130 102 / 0.32);
   --green:#7FAE8C;
   --live-edge:#4E6B58;
   --warn-bg:#4A4230;
@@ -183,7 +153,6 @@
   --graph-label:#EFEEE5;
   --graph-value:#B9BEBB;
   --graph-edge:#C3C8C5;
-  --graph-glow:rgb(209 130 102 / 0.20);
   --cat-historical:#93A5CC;
   --cat-trend:#E0A184;
   --cat-matchup:#8FBE9C;
@@ -192,9 +161,118 @@
   --cat-advanced:#7FB3BA;
   --cat-meta:#BFA3C4;
   --court-line:rgb(147 165 204 / 0.34);
-  --court-glow:rgb(209 130 102 / 0.26);
-  --landing-glow:rgb(209 130 102 / 0.09);
+  --court-glow:var(--graph-glow);
 }
+
+/* ── Accent axis ───────────────────────────────────────────────────────────
+   Swappable accent, independent of the base theme. Tints are computed
+   blends, and every pair below was checked: text-on-fill, accent text on
+   the canvas, and accent text on its own soft tint. */
+
+:root{
+  /* default accent — Blue Nova itself */
+  --accent:#5B6D92;
+  --accent-ink:#4C5C7C;
+  --accent-soft:#EBEDF2;
+  --accent-contrast:#FFFFFF;
+  --accent-edge:#B7BFCF;
+  --focus-ring:rgb(91 109 146 / 0.30);
+  --graph-glow:rgb(91 109 146 / 0.16);
+  --landing-glow:rgb(91 109 146 / 0.07);
+}
+:root[data-theme="dusk"]{
+  --accent-ink:#B5BDCE;
+  --accent-soft:#37414B;
+  --accent-edge:#445165;
+  --graph-glow:rgb(91 109 146 / 0.22);
+}
+
+:root[data-accent="indigo"]{
+  --accent:#4F5D93;
+  --accent-ink:#43507F;
+  --accent-soft:#EAECF2;
+  --accent-contrast:#FFFFFF;
+  --accent-edge:#B2B8CF;
+  --focus-ring:rgb(79 93 147 / 0.30);
+  --graph-glow:rgb(79 93 147 / 0.16);
+  --landing-glow:rgb(79 93 147 / 0.07);
+}
+:root[data-theme="dusk"][data-accent="indigo"]{
+  --accent-ink:#B0B6CE;
+  --accent-soft:#343D4C;
+  --accent-edge:#3E4966;
+  --graph-glow:rgb(79 93 147 / 0.22);
+}
+
+:root[data-accent="teal"]{
+  --accent:#3F6F75;
+  --accent-ink:#356167;
+  --accent-soft:#E8EEEE;
+  --accent-contrast:#FFFFFF;
+  --accent-edge:#ABC0C2;
+  --focus-ring:rgb(63 111 117 / 0.30);
+  --graph-glow:rgb(63 111 117 / 0.16);
+  --landing-glow:rgb(63 111 117 / 0.07);
+}
+:root[data-theme="dusk"][data-accent="teal"]{
+  --accent-ink:#A9BEC1;
+  --accent-soft:#304144;
+  --accent-edge:#355256;
+  --graph-glow:rgb(63 111 117 / 0.22);
+}
+
+:root[data-accent="plum"]{
+  --accent:#7A5C7E;
+  --accent-ink:#684D6C;
+  --accent-soft:#EFEBF0;
+  --accent-contrast:#FFFFFF;
+  --accent-edge:#C4B7C6;
+  --focus-ring:rgb(122 92 126 / 0.30);
+  --graph-glow:rgb(122 92 126 / 0.16);
+  --landing-glow:rgb(122 92 126 / 0.07);
+}
+:root[data-theme="dusk"][data-accent="plum"]{
+  --accent-ink:#C3B6C5;
+  --accent-soft:#3E3D47;
+  --accent-edge:#54485B;
+  --graph-glow:rgb(122 92 126 / 0.22);
+}
+
+:root[data-accent="sage"]{
+  --accent:#5F7A5A;
+  --accent-ink:#4E664A;
+  --accent-soft:#ECEFEB;
+  --accent-contrast:#FFFFFF;
+  --accent-edge:#B9C4B6;
+  --focus-ring:rgb(95 122 90 / 0.30);
+  --graph-glow:rgb(95 122 90 / 0.16);
+  --landing-glow:rgb(95 122 90 / 0.07);
+}
+:root[data-theme="dusk"][data-accent="sage"]{
+  --accent-ink:#B7C3B5;
+  --accent-soft:#37443E;
+  --accent-edge:#465848;
+  --graph-glow:rgb(95 122 90 / 0.22);
+}
+
+:root[data-accent="terracotta"]{
+  --accent:#D18266;
+  --accent-ink:#9E5238;
+  --accent-soft:#F9F0ED;
+  --accent-contrast:#3A241C;
+  --accent-edge:#EBC8BC;
+  --focus-ring:rgb(209 130 102 / 0.30);
+  --graph-glow:rgb(209 130 102 / 0.16);
+  --landing-glow:rgb(209 130 102 / 0.07);
+}
+:root[data-theme="dusk"][data-accent="terracotta"]{
+  --accent-ink:#E2B2A0;
+  --accent-soft:#534641;
+  --accent-edge:#815C4E;
+  --graph-glow:rgb(209 130 102 / 0.22);
+}
+
+/* verification: ALL PAIRS PASS */
 
 /* ── Theme picker ── */
 .theme-btn{
@@ -239,6 +317,22 @@
 .theme-name{flex:1;}
 .theme-check{visibility:hidden;color:var(--accent-ink);font-size:0.9rem;}
 .theme-option.active .theme-check{visibility:visible;}
+
+.theme-divider{
+  margin:6px 10px 4px;
+  font-size:0.68rem;font-weight:600;letter-spacing:0.04em;
+  text-transform:uppercase;color:var(--ink-3);
+}
+.accent-row{display:flex;gap:6px;padding:2px 10px 8px;}
+.accent-dot{
+  width:24px;height:24px;border-radius:50%;
+  border:2px solid transparent;
+  box-shadow:inset 0 0 0 1px rgb(0 0 0 / 0.12);
+  cursor:pointer;padding:0;
+  transition:transform 0.15s, border-color 0.15s;
+}
+.accent-dot:hover{transform:scale(1.12);}
+.accent-dot.active{border-color:var(--ink);}
 
 /* ── Court backdrop ── */
 .court-layer{

@@ -8,6 +8,23 @@ const BDL_THEMES = [
   { id: 'dusk',  label: 'Dusk',      swatch: ['#364042', '#93A5CC', '#D18266'] },
 ];
 
+const BDL_ACCENTS = [
+  { id: '',           label: 'Periwinkle', color: '#5B6D92' },
+  { id: 'indigo',     label: 'Indigo',     color: '#4F5D93' },
+  { id: 'teal',       label: 'Teal',       color: '#3F6F75' },
+  { id: 'plum',       label: 'Plum',       color: '#7A5C7E' },
+  { id: 'sage',       label: 'Sage',       color: '#5F7A5A' },
+  { id: 'terracotta', label: 'Terracotta', color: '#D18266' },
+];
+
+function bdlSetAccent(id) {
+  document.documentElement.dataset.accent = id;
+  try { localStorage.setItem('bdl_accent', id); } catch (e) { /* private mode */ }
+  document.querySelectorAll('.accent-dot').forEach(el => {
+    el.classList.toggle('active', el.dataset.accentId === id);
+  });
+}
+
 function bdlSetTheme(id) {
   document.documentElement.dataset.theme = id;
   try { localStorage.setItem('bdl_theme', id); } catch (e) { /* private mode */ }
@@ -41,6 +58,17 @@ function initThemePicker(mount) {
       <span class="theme-name">${t.label}</span>
       <iconify-icon class="theme-check" icon="tabler:check"></iconify-icon>
     </button>`).join('');
+  const currentAccent = document.documentElement.dataset.accent || '';
+  const accents = document.createElement('div');
+  accents.innerHTML = `
+    <div class="theme-divider">Accent</div>
+    <div class="accent-row">${BDL_ACCENTS.map(a => `
+      <button class="accent-dot ${a.id === currentAccent ? 'active' : ''}"
+        data-accent-id="${a.id}" style="background:${a.color}"
+        title="${a.label}" aria-label="${a.label} accent"
+        onclick="bdlSetAccent('${a.id}')"></button>`).join('')}</div>`;
+  pop.appendChild(accents);
+
   document.body.appendChild(pop);
 }
 
