@@ -18,14 +18,12 @@ jobs:
           cache: pip
 
       - name: Install dependencies
-        run: |
-          pip install -r requirements.txt
-          pip install pytest
+        run: pip install -r requirements-dev.txt
 
       # The prediction engine and the copula simulation are pure computation,
       # so they run here with no database and no API keys.
       - name: Unit tests
-        run: pytest tests/ -q
+        run: python -m pytest -q
 
       - name: Import check (catches syntax and circular imports)
         run: python -c "import app.main, backtest, sync_news, sync_player_stats, refresh_aggregates"
