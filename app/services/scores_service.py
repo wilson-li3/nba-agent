@@ -31,7 +31,7 @@ def _fetch_scoreboard_today() -> dict:
             "game_status_text": g.get("gameStatusText", ""),
         })
 
-    return {"games": games, "label": "Today"}
+    return {"games": games, "label": "Today", "context": "live"}
 
 
 def _fetch_upcoming() -> dict:
@@ -87,12 +87,75 @@ def _fetch_upcoming() -> dict:
                     label = "Tomorrow"
                 else:
                     label = target.strftime("%a, %b %-d")
-                return {"games": games, "label": label}
+                return {"games": games, "label": label, "context": "upcoming"}
         except Exception:
             logger.error("Failed to fetch upcoming games for %s", date_str, exc_info=True)
             continue
 
-    return {"games": [], "label": "Today"}
+    return {"games": [], "label": "Today", "context": "none"}
+
+
+def _current_season_pair() -> list[str]:
+    """['2026-27', '2025-26'] — the upcoming season first, then the last one.
+
+    NBA seasons roll over in the autumn, so anything before August still
+    belongs to the season that started the previous calendar year.
+    """
+    now = datetime.now()
+    start = now.year if now.month >= 8 else now.year - 1
+    return [f"{start + 1}-{str(start + 2)[2:]}", f"{start}-{str(start + 1)[2:]}"]
+
+
+def _fetch_preseason() -> dict:
+    """Fall back to the preseason slate when there is no regular-season game.
+
+    Tries next season's preseason first (published in late summer); if that
+    isn't out yet, shows the most recent completed preseason instead.
+    """
+    from nba_api.stats.endpoints import leaguegamefinder
+
+    for season in _current_season_pair():
+        try:
+            df = leaguegamefinder.LeagueGameFinder(
+                season_nullable=season,
+                season_type_nullable="Pre Season",
+                league_id_nullable="00",
+                timeout=25,
+            ).get_data_frames()[0]
+        except Exception:
+            logger.warning("Preseason lookup failed for %s", season, exc_info=True)
+            continue
+        if df is None or df.empty:
+            continue
+
+        # One row per team per game — pair them up on GAME_ID, and show the
+        # most recent slate only.
+        latest = df["GAME_DATE"].max()
+        slate = df[df["GAME_DATE"] == latest]
+        by_game: dict[str, dict] = {}
+        for _, r in slate.iterrows():
+            g = by_game.setdefault(r["GAME_ID"], {})
+            side = "home" if " vs. " in str(r["MATCHUP"]) else "away"
+            g[f"{side}_team_abbr"] = r["TEAM_ABBREVIATION"]
+            g[f"{side}_team_id"] = int(r["TEAM_ID"])
+            g[f"{side}_pts"] = int(r["PTS"]) if r["PTS"] == r["PTS"] else None
+
+        games = [
+            {**g, "game_status_text": "Final"}
+            for g in by_game.values()
+            if g.get("home_team_abbr") and g.get("away_team_abbr")
+        ]
+        if not games:
+            continue
+
+        try:
+            pretty = datetime.strptime(str(latest)[:10], "%Y-%m-%d").strftime("%b %-d, %Y")
+        except ValueError:
+            pretty = str(latest)[:10]
+        return {"games": games, "label": f"Preseason · {pretty}",
+                "context": "preseason", "season": season}
+
+    return {"games": [], "label": "No games", "context": "none"}
 
 
 async def get_scores() -> dict:
@@ -103,13 +166,19 @@ async def get_scores() -> dict:
     if _cache and (now - _cache[0]) < _CACHE_TTL:
         return _cache[1]
 
-    try:
-        result = await asyncio.to_thread(_fetch_scoreboard_today)
-        if not result["games"]:
-            result = await asyncio.to_thread(_fetch_upcoming)
-    except Exception:
-        logger.error("Failed to fetch scores", exc_info=True)
-        result = {"games": [], "label": "Today"}
+    # Each stage gets its own guard: the live scoreboard endpoint raises
+    # outright in the offseason, and a single try block around all three
+    # would skip the fallbacks entirely.
+    result = {"games": [], "label": "Today", "context": "none"}
+    for fetch in (_fetch_scoreboard_today, _fetch_upcoming, _fetch_preseason):
+        try:
+            staged = await asyncio.to_thread(fetch)
+        except Exception:
+            logger.warning("Scores stage %s failed", fetch.__name__, exc_info=True)
+            continue
+        if staged.get("games"):
+            result = staged
+            break
 
     _cache = (now, result)
     return result
