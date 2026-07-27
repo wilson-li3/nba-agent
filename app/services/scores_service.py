@@ -106,56 +106,79 @@ def _current_season_pair() -> list[str]:
     return [f"{start + 1}-{str(start + 2)[2:]}", f"{start}-{str(start + 1)[2:]}"]
 
 
-def _fetch_preseason() -> dict:
-    """Fall back to the preseason slate when there is no regular-season game.
+def _game_candidates() -> list[tuple]:
+    """Every source that could hold the most recent basketball, in no
+    particular order — we pick by actual game date, not by guessing."""
+    now = datetime.now()
+    upcoming, current = _current_season_pair()
+    return [
+        ("00", upcoming, "Pre Season", "Preseason"),
+        ("00", current, "Playoffs", "Playoffs"),
+        ("00", current, "Regular Season", "Regular season"),
+        ("00", current, "Pre Season", "Preseason"),
+        ("13", str(now.year), None, "Summer League"),
+        ("13", str(now.year - 1), None, "Summer League"),
+    ]
 
-    Tries next season's preseason first (published in late summer); if that
-    isn't out yet, shows the most recent completed preseason instead.
+
+def _fetch_recent() -> dict:
+    """Most recently played games, whatever competition they came from.
+
+    In the offseason there is no live slate, so rather than assuming which
+    competition is newest (playoffs? preseason? summer league?), query all of
+    them in parallel and take whichever actually has the latest game date.
     """
+    from concurrent.futures import ThreadPoolExecutor
+
     from nba_api.stats.endpoints import leaguegamefinder
 
-    for season in _current_season_pair():
+    def pull(spec):
+        league, season, season_type, label = spec
         try:
-            df = leaguegamefinder.LeagueGameFinder(
-                season_nullable=season,
-                season_type_nullable="Pre Season",
-                league_id_nullable="00",
-                timeout=25,
-            ).get_data_frames()[0]
+            kwargs = dict(season_nullable=season, league_id_nullable=league, timeout=25)
+            if season_type:
+                kwargs["season_type_nullable"] = season_type
+            df = leaguegamefinder.LeagueGameFinder(**kwargs).get_data_frames()[0]
         except Exception:
-            logger.warning("Preseason lookup failed for %s", season, exc_info=True)
-            continue
+            logger.warning("Game lookup failed for %s %s", league, season, exc_info=True)
+            return None
         if df is None or df.empty:
-            continue
+            return None
+        return (str(df["GAME_DATE"].max()), label, df)
 
-        # One row per team per game — pair them up on GAME_ID, and show the
-        # most recent slate only.
-        latest = df["GAME_DATE"].max()
-        slate = df[df["GAME_DATE"] == latest]
-        by_game: dict[str, dict] = {}
-        for _, r in slate.iterrows():
-            g = by_game.setdefault(r["GAME_ID"], {})
-            side = "home" if " vs. " in str(r["MATCHUP"]) else "away"
-            g[f"{side}_team_abbr"] = r["TEAM_ABBREVIATION"]
-            g[f"{side}_team_id"] = int(r["TEAM_ID"])
-            g[f"{side}_pts"] = int(r["PTS"]) if r["PTS"] == r["PTS"] else None
+    specs = _game_candidates()
+    with ThreadPoolExecutor(max_workers=len(specs)) as pool:
+        found = [r for r in pool.map(pull, specs) if r]
 
-        games = [
-            {**g, "game_status_text": "Final"}
-            for g in by_game.values()
-            if g.get("home_team_abbr") and g.get("away_team_abbr")
-        ]
-        if not games:
-            continue
+    if not found:
+        return {"games": [], "label": "No games", "context": "none"}
 
-        try:
-            pretty = datetime.strptime(str(latest)[:10], "%Y-%m-%d").strftime("%b %-d, %Y")
-        except ValueError:
-            pretty = str(latest)[:10]
-        return {"games": games, "label": f"Preseason · {pretty}",
-                "context": "preseason", "season": season}
+    latest, label, df = max(found, key=lambda r: r[0])
+    slate = df[df["GAME_DATE"].astype(str) == latest]
 
-    return {"games": [], "label": "No games", "context": "none"}
+    # One row per team per game — pair them on GAME_ID
+    by_game: dict[str, dict] = {}
+    for _, r in slate.iterrows():
+        game = by_game.setdefault(r["GAME_ID"], {})
+        side = "home" if " vs. " in str(r["MATCHUP"]) else "away"
+        game[f"{side}_team_abbr"] = r["TEAM_ABBREVIATION"]
+        game[f"{side}_team_id"] = int(r["TEAM_ID"])
+        game[f"{side}_pts"] = int(r["PTS"]) if r["PTS"] == r["PTS"] else None
+
+    games = [
+        {**g, "game_status_text": "Final"}
+        for g in by_game.values()
+        if g.get("home_team_abbr") and g.get("away_team_abbr")
+    ]
+    if not games:
+        return {"games": [], "label": "No games", "context": "none"}
+
+    try:
+        pretty = datetime.strptime(latest[:10], "%Y-%m-%d").strftime("%b %-d, %Y")
+    except ValueError:
+        pretty = latest[:10]
+    return {"games": games, "label": f"{label} · {pretty}",
+            "context": "recent", "kind": label, "played_on": latest[:10]}
 
 
 async def get_scores() -> dict:
@@ -170,7 +193,7 @@ async def get_scores() -> dict:
     # outright in the offseason, and a single try block around all three
     # would skip the fallbacks entirely.
     result = {"games": [], "label": "Today", "context": "none"}
-    for fetch in (_fetch_scoreboard_today, _fetch_upcoming, _fetch_preseason):
+    for fetch in (_fetch_scoreboard_today, _fetch_upcoming, _fetch_recent):
         try:
             staged = await asyncio.to_thread(fetch)
         except Exception:

@@ -2497,10 +2497,13 @@ function renderNotice(data) {
   const text = document.getElementById('noticeText');
   if (!banner || !text) return;
   const ctx = data.context;
-  if (ctx === 'preseason') {
-    const when = (data.label || '').replace(/^Preseason\s*·\s*/, '');
-    text.innerHTML = `<b>Offseason.</b> No live slate — matchups below are the most recent preseason games`
-      + `${when ? ` (${escapeHtml(when)})` : ''}, and pick probabilities are priced on the last completed regular season.`;
+  if (ctx === 'recent') {
+    const kind = (data.kind || 'games').toLowerCase();
+    const when = data.label && data.label.includes('·')
+      ? data.label.split('·').pop().trim() : '';
+    text.innerHTML = `<b>Offseason.</b> No live slate — scores below are the most recent games played`
+      + `${kind ? ` (${escapeHtml(kind)}${when ? `, ${escapeHtml(when)}` : ''})` : ''}, `
+      + `and pick probabilities are priced on the last completed regular season.`;
     banner.hidden = false;
   } else if (ctx === 'none') {
     text.innerHTML = `<b>No games scheduled.</b> Picks are modelled on the last completed season, `
